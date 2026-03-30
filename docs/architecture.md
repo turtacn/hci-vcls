@@ -1150,11 +1150,8 @@ sequenceDiagram
     QEMU_A->>ENGINE: VM 201 running
     QEMU_B->>ENGINE: VM 202 running
 
-    ENGINE->>OPS: BatchBootResult{
-        Total:5, Succeeded:5, Failed:0,
-        Duration:12.3s,
-        Results:[...]
-    }
+    ENGINE->>OPS: 返回 BatchBootResult
+    Note over ENGINE,OPS: Total=5, Succeeded=5, Failed=0, Duration=12.3s, Results=[...]
 ```
 
 
