@@ -1,7 +1,6 @@
 package cfs
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 )

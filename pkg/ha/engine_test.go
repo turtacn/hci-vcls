@@ -125,7 +125,7 @@ func TestEngine_Evaluate(t *testing.T) {
 
 	// Test non-leader
 	fdmAgentNonLeader := &mockFDMAgent{leaderID: "node-2"}
-	engineNonLeader := NewEngine(
+	_ = NewEngine(
 		HAEngineConfig{},
 		evaluator,
 		&mockBatchExecutor{},

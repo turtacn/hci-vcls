@@ -29,14 +29,7 @@ func TestPool_ConfirmFailure(t *testing.T) {
 	}
 
 	configEmpty := WitnessConfig{Endpoints: []string{}}
-	poolEmpty, _ := NewPool(configEmpty, log.(interface {
-		Debug(msg string, args ...any)
-		Info(msg string, args ...any)
-		Warn(msg string, args ...any)
-		Error(msg string, args ...any)
-		WithFields(fields ...any) interface{}
-		WithError(err error) interface{}
-	}))
+	poolEmpty, _ := NewPool(configEmpty, log)
 
 	confirmedEmpty := poolEmpty.ConfirmFailure(ctx, req)
 	if confirmedEmpty {
