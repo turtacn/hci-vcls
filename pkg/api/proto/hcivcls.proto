@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package hcivcls;
+
+option go_package = "github.com/turtacn/hci-vcls/pkg/api/proto";
+
+service HAService {
+  rpc Evaluate(EvaluateRequest) returns (EvaluateResponse);
+  rpc GetActiveTasks(GetTasksRequest) returns (GetTasksResponse);
+}
+
+service FDMService {
+  rpc GetClusterStatus(GetClusterStatusRequest) returns (GetClusterStatusResponse);
+  rpc GetDegradation(GetDegradationRequest) returns (GetDegradationResponse);
+}
+
+service StatusService {
+  rpc GetFullStatus(GetFullStatusRequest) returns (GetFullStatusResponse);
+}
+
+message EvaluateRequest {
+  string vmid = 1;
+}
+
+message EvaluateResponse {
+  string vmid = 1;
+  string action = 2;
+  string target_node = 3;
+  string reason = 4;
+}
+
+message GetTasksRequest {}
+
+message GetTasksResponse {
+  repeated TaskInfo tasks = 1;
+}
+
+message TaskInfo {
+  string vmid = 1;
+  string status = 2;
+}
+
+message GetClusterStatusRequest {}
+
+message GetClusterStatusResponse {
+  string leader_id = 1;
+  map<string, string> node_states = 2;
+}
+
+message GetDegradationRequest {}
+
+message GetDegradationResponse {
+  int32 level = 1;
+}
+
+message GetFullStatusRequest {}
+
+message GetFullStatusResponse {
+  string leader_id = 1;
+  int32 degradation_level = 2;
+  repeated string active_capabilities = 3;
+}
+
+//Personal.AI order the ending
