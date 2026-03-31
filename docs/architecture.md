@@ -42,8 +42,7 @@
 
 ## 1. 概述与背景
 
-hci-vcls 项目源于对真实 HCI 生产环境中控制平面失效问题的深度分析。现有基于Proxmox VE 的 HCI 集群将 ZooKeeper（ZK）、pmxcfs（CFS）、MySQL 和 HAService
-紧密耦合于同一控制平面，形成了一个脆弱的共同命运组合：任意组件进入不健康状态，整个 HA 调度链路即告中断。
+hci-vcls 项目源于对真实 HCI 生产环境中控制平面失效问题的深度分析。现有基于Proxmox VE 的 HCI 集群将 ZooKeeper（ZK）、pmxcfs（CFS）、MySQL 和 HAService 紧密耦合于同一控制平面，形成了一个脆弱的共同命运组合：任意组件进入不健康状态，整个 HA 调度链路即告中断。
 
 本项目以 VMware vCenter + vCLS 架构的解耦设计为参照系，系统性地回答以下核心工程问题：
 
