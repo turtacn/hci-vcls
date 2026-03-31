@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"bytes"
 	"errors"
 	"log/slog"
 	"testing"
