@@ -8,6 +8,7 @@ require (
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/go-zookeeper/zk v1.0.4
 	github.com/prometheus/client_golang v1.16.0
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.10
@@ -30,6 +31,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect

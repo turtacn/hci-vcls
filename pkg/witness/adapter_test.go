@@ -3,16 +3,18 @@ package witness
 import (
 	"context"
 	"testing"
+
+	"github.com/turtacn/hci-vcls/internal/logger"
 )
 
 type mockLogger struct{}
 
-func (m mockLogger) Debug(msg string, args ...any)            {}
-func (m mockLogger) Info(msg string, args ...any)             {}
-func (m mockLogger) Warn(msg string, args ...any)             {}
-func (m mockLogger) Error(msg string, args ...any)            {}
-func (m mockLogger) WithFields(fields ...any) interface{} { return m }
-func (m mockLogger) WithError(err error) interface{}      { return m }
+func (m mockLogger) Debug(msg string, args ...any)                 {}
+func (m mockLogger) Info(msg string, args ...any)                  {}
+func (m mockLogger) Warn(msg string, args ...any)                  {}
+func (m mockLogger) Error(msg string, args ...any)                 {}
+func (m mockLogger) WithFields(fields ...any) logger.Logger { return m }
+func (m mockLogger) WithError(err error) logger.Logger      { return m }
 
 func TestPool_ConfirmFailure(t *testing.T) {
 	ctx := context.Background()
