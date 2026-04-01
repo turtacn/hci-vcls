@@ -61,22 +61,65 @@ func (m *cacheManagerImpl) GetComputeMeta(ctx context.Context, vmid string) (*VM
 }
 
 func (m *cacheManagerImpl) GetNetworkMeta(ctx context.Context, vmid string) (*VMNetworkMeta, error) {
-	// ... similar logic
-	return nil, nil
+	if m.nStore == nil {
+		return nil, nil
+	}
+	meta, err := m.nStore.Get(vmid)
+	if err == ErrCacheMiss && m.metaSource != nil {
+		m.stats.Misses++
+		meta, err = m.metaSource.FetchVMNetworkMeta(ctx, vmid)
+		if err == nil && meta != nil {
+			m.nStore.Put(vmid, *meta)
+			m.stats.TotalEntries++
+		}
+	} else if err == nil {
+		m.stats.Hits++
+	}
+	return meta, err
 }
 
 func (m *cacheManagerImpl) GetStorageMeta(ctx context.Context, vmid string) (*VMStorageMeta, error) {
-	// ... similar logic
-	return nil, nil
+	if m.sStore == nil {
+		return nil, nil
+	}
+	meta, err := m.sStore.Get(vmid)
+	if err == ErrCacheMiss && m.metaSource != nil {
+		m.stats.Misses++
+		meta, err = m.metaSource.FetchVMStorageMeta(ctx, vmid)
+		if err == nil && meta != nil {
+			m.sStore.Put(vmid, *meta)
+			m.stats.TotalEntries++
+		}
+	} else if err == nil {
+		m.stats.Hits++
+	}
+	return meta, err
 }
 
 func (m *cacheManagerImpl) GetHAMeta(ctx context.Context, vmid string) (*VMHAMeta, error) {
-	// ... similar logic
+	// MVP uses only compute/network/storage metas, ha meta is for future expansion
 	return nil, nil
 }
 
 func (m *cacheManagerImpl) Sync(ctx context.Context, vmid string) error {
-	// Sync logic using metaSource and local stores
+	// For MVP, explicitly forcing cache refresh
+	if m.metaSource == nil {
+		return nil
+	}
+	cMeta, _ := m.metaSource.FetchVMComputeMeta(ctx, vmid)
+	if cMeta != nil && m.cStore != nil {
+		m.cStore.Put(vmid, *cMeta)
+	}
+
+	nMeta, _ := m.metaSource.FetchVMNetworkMeta(ctx, vmid)
+	if nMeta != nil && m.nStore != nil {
+		m.nStore.Put(vmid, *nMeta)
+	}
+
+	sMeta, _ := m.metaSource.FetchVMStorageMeta(ctx, vmid)
+	if sMeta != nil && m.sStore != nil {
+		m.sStore.Put(vmid, *sMeta)
+	}
 	return nil
 }
 

@@ -10,10 +10,10 @@ import (
 
 type mockZKAdapter struct{}
 
-func (m mockZKAdapter) Health() zk.ZKStatus       { return zk.ZKStatus{State: zk.ZKStateHealthy} }
-func (m mockZKAdapter) IsReadOnly() zk.ZKStatus   { return zk.ZKStatus{State: zk.ZKStateHealthy} }
-func (m mockZKAdapter) Ping() zk.ZKStatus         { return zk.ZKStatus{State: zk.ZKStateHealthy} }
-func (m mockZKAdapter) Close() error              { return nil }
+func (m mockZKAdapter) Health() zk.ZKStatus     { return zk.ZKStatus{State: zk.ZKStateHealthy} }
+func (m mockZKAdapter) IsReadOnly() zk.ZKStatus { return zk.ZKStatus{State: zk.ZKStateHealthy} }
+func (m mockZKAdapter) Ping() zk.ZKStatus       { return zk.ZKStatus{State: zk.ZKStateHealthy} }
+func (m mockZKAdapter) Close() error            { return nil }
 
 func TestElector_CampaignResign(t *testing.T) {
 	config := ElectionConfig{NodeID: "node-1"}

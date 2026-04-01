@@ -20,14 +20,11 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.LogLevel != "info" {
 		t.Errorf("Expected default LogLevel info, got %s", cfg.LogLevel)
 	}
-	if cfg.LogFormat != "text" {
-		t.Errorf("Expected default LogFormat text, got %s", cfg.LogFormat)
+	if cfg.Node.ID != "local-node" {
+		t.Errorf("Expected default Node.ID local-node, got %s", cfg.Node.ID)
 	}
-	if cfg.ZK.SessionTimeoutMs != 5000 {
-		t.Errorf("Expected default ZK timeout 5000, got %d", cfg.ZK.SessionTimeoutMs)
-	}
-	if cfg.HA.MaxConcurrentBoots != 5 {
-		t.Errorf("Expected default MaxConcurrentBoots 5, got %d", cfg.HA.MaxConcurrentBoots)
+	if cfg.Server.ListenAddr != ":8080" {
+		t.Errorf("Expected default Server.ListenAddr :8080, got %s", cfg.Server.ListenAddr)
 	}
 }
 
@@ -37,13 +34,11 @@ func TestLoad_Custom(t *testing.T) {
 
 	yamlContent := `
 LogLevel: debug
-LogFormat: json
-ZK:
-  Endpoints:
-    - 192.168.1.1:2181
-  SessionTimeoutMs: 10000
-HA:
-  MaxConcurrentBoots: 10
+Node:
+  ID: "node-1"
+  ClusterID: "prod-cluster"
+Server:
+  ListenAddr: ":9000"
 `
 	_ = os.WriteFile(path, []byte(yamlContent), 0644)
 
@@ -55,23 +50,35 @@ HA:
 	if cfg.LogLevel != "debug" {
 		t.Errorf("Expected LogLevel debug, got %s", cfg.LogLevel)
 	}
-	if cfg.LogFormat != "json" {
-		t.Errorf("Expected LogFormat json, got %s", cfg.LogFormat)
+	if cfg.Node.ID != "node-1" {
+		t.Errorf("Expected Node.ID node-1, got %s", cfg.Node.ID)
 	}
-	if cfg.ZK.SessionTimeoutMs != 10000 {
-		t.Errorf("Expected ZK timeout 10000, got %d", cfg.ZK.SessionTimeoutMs)
+	if cfg.Server.ListenAddr != ":9000" {
+		t.Errorf("Expected Server.ListenAddr :9000, got %s", cfg.Server.ListenAddr)
 	}
-	if len(cfg.ZK.Endpoints) != 1 || cfg.ZK.Endpoints[0] != "192.168.1.1:2181" {
-		t.Errorf("Expected ZK endpoints ['192.168.1.1:2181'], got %v", cfg.ZK.Endpoints)
+}
+
+func TestLoad_EnvOverride(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	_ = os.WriteFile(path, []byte(""), 0644)
+
+	os.Setenv("VCLS_NODE_ID", "env-node")
+	defer os.Unsetenv("VCLS_NODE_ID")
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Failed to load config: %v", err)
 	}
-	if cfg.HA.MaxConcurrentBoots != 10 {
-		t.Errorf("Expected MaxConcurrentBoots 10, got %d", cfg.HA.MaxConcurrentBoots)
+
+	if cfg.Node.ID != "env-node" {
+		t.Errorf("Expected Node.ID env-node, got %s", cfg.Node.ID)
 	}
 }
 
 func TestLoad_InvalidPath(t *testing.T) {
 	// Should fall back to defaults if file doesn't exist
-	cfg, err := Load("/tmp/nonexistent_config.yaml")
+	cfg, err := Load("/tmp/nonexistent_config_vcls_test.yaml")
 	if err != nil {
 		t.Fatalf("Expected no error when file is missing, got %v", err)
 	}

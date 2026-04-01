@@ -4,9 +4,9 @@ import "github.com/turtacn/hci-vcls/pkg/fdm"
 
 func DefaultCapabilityMatrix() CapabilityMatrix {
 	return CapabilityMatrix{
-		fdm.DegradationNone: {CapabilityHA, CapabilityDRS, CapabilityFT, CapabilityVMMigration, CapabilityStoragevMotion, CapabilitySnapshots},
-		fdm.DegradationZK:   {CapabilityHA, CapabilityDRS, CapabilityVMMigration},
-		fdm.DegradationCFS:  {CapabilityHA, CapabilityDRS, CapabilityVMMigration},
+		fdm.DegradationNone:  {CapabilityHA, CapabilityDRS, CapabilityFT, CapabilityVMMigration, CapabilityStoragevMotion, CapabilitySnapshots},
+		fdm.DegradationZK:    {CapabilityHA, CapabilityDRS, CapabilityVMMigration},
+		fdm.DegradationCFS:   {CapabilityHA, CapabilityDRS, CapabilityVMMigration},
 		fdm.DegradationMySQL: {CapabilityHA},
 		fdm.DegradationAll:   {},
 	}

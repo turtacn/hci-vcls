@@ -1,5 +1,6 @@
 package logger
 
+// Logger defines the standard logging interface for hci-vcls.
 type Logger interface {
 	Debug(msg string, args ...any)
 	Info(msg string, args ...any)

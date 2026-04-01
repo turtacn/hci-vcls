@@ -11,18 +11,18 @@ import (
 )
 
 type engineImpl struct {
-	config     HAEngineConfig
-	evaluator  Evaluator
-	batchExec  BatchExecutor
-	fdmAgent   fdm.Agent
-	mysqlAdp   mysql.Adapter
-	qmExec     qm.Executor
-	cacheMgr   cache.CacheManager
-	vclsAgent  vcls.Agent
-	activeMap  map[string]BootTask
-	cbs        []func(HADecision)
-	ctx        context.Context
-	cancel     context.CancelFunc
+	config    HAEngineConfig
+	evaluator Evaluator
+	batchExec BatchExecutor
+	fdmAgent  fdm.Agent
+	mysqlAdp  mysql.Adapter
+	qmExec    qm.Executor
+	cacheMgr  cache.CacheManager
+	vclsAgent vcls.Agent
+	activeMap map[string]BootTask
+	cbs       []func(HADecision)
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 func NewEngine(

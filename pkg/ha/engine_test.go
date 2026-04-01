@@ -62,13 +62,15 @@ type mockMySQLAdapter struct {
 	releaseErr error
 }
 
-func (m *mockMySQLAdapter) Health() mysql.MySQLStatus                      { return mysql.MySQLStatus{State: mysql.MySQLStateHealthy} }
-func (m *mockMySQLAdapter) ClaimBoot(claim mysql.BootClaim) error          { return m.claimErr }
-func (m *mockMySQLAdapter) ConfirmBoot(vmid, token string) error           { return m.confirmErr }
-func (m *mockMySQLAdapter) ReleaseBoot(vmid, token string) error           { return m.releaseErr }
+func (m *mockMySQLAdapter) Health() mysql.MySQLStatus {
+	return mysql.MySQLStatus{State: mysql.MySQLStateHealthy}
+}
+func (m *mockMySQLAdapter) ClaimBoot(claim mysql.BootClaim) error            { return m.claimErr }
+func (m *mockMySQLAdapter) ConfirmBoot(vmid, token string) error             { return m.confirmErr }
+func (m *mockMySQLAdapter) ReleaseBoot(vmid, token string) error             { return m.releaseErr }
 func (m *mockMySQLAdapter) GetVMState(vmid string) (*mysql.HAVMState, error) { return nil, nil }
-func (m *mockMySQLAdapter) UpsertVMState(state mysql.HAVMState) error      { return nil }
-func (m *mockMySQLAdapter) Close() error                                   { return nil }
+func (m *mockMySQLAdapter) UpsertVMState(state mysql.HAVMState) error        { return nil }
+func (m *mockMySQLAdapter) Close() error                                     { return nil }
 
 type mockQMExecutor struct {
 	result qm.BootResult
@@ -88,13 +90,15 @@ func (m *mockQMExecutor) Unlock(ctx context.Context, vmid string) error { return
 
 type mockVCLSAgent struct{}
 
-func (m *mockVCLSAgent) Start(ctx context.Context) error                         { return nil }
-func (m *mockVCLSAgent) Stop() error                                             { return nil }
-func (m *mockVCLSAgent) ClusterServiceState() vcls.ClusterServiceState           { return vcls.ServiceStateHealthy }
-func (m *mockVCLSAgent) IsCapable(cap vcls.Capability) bool                      { return true }
-func (m *mockVCLSAgent) RequireCapability(cap vcls.Capability) error             { return nil }
+func (m *mockVCLSAgent) Start(ctx context.Context) error { return nil }
+func (m *mockVCLSAgent) Stop() error                     { return nil }
+func (m *mockVCLSAgent) ClusterServiceState() vcls.ClusterServiceState {
+	return vcls.ServiceStateHealthy
+}
+func (m *mockVCLSAgent) IsCapable(cap vcls.Capability) bool                             { return true }
+func (m *mockVCLSAgent) RequireCapability(cap vcls.Capability) error                    { return nil }
 func (m *mockVCLSAgent) OnDegradationChanged(callback func(level fdm.DegradationLevel)) {}
-func (m *mockVCLSAgent) ActiveCapabilities() []vcls.Capability                   { return nil }
+func (m *mockVCLSAgent) ActiveCapabilities() []vcls.Capability                          { return nil }
 
 func TestEngine_Evaluate(t *testing.T) {
 	fdmAgent := &mockFDMAgent{leaderID: "node-1"} // From evaluator_test.go
@@ -144,15 +148,15 @@ type mockFDMAgentStrict struct {
 	isLeader bool
 }
 
-func (m *mockFDMAgentStrict) Start(ctx context.Context) error                         { return nil }
-func (m *mockFDMAgentStrict) Stop() error                                             { return nil }
-func (m *mockFDMAgentStrict) NodeStates() map[string]fdm.NodeState                    { return nil }
-func (m *mockFDMAgentStrict) LocalDegradationLevel() fdm.DegradationLevel             { return fdm.DegradationNone }
-func (m *mockFDMAgentStrict) IsLeader() bool                                          { return m.isLeader }
-func (m *mockFDMAgentStrict) LeaderNodeID() string                                    { return "" }
-func (m *mockFDMAgentStrict) OnNodeFailure(callback func(nodeID string))              {}
+func (m *mockFDMAgentStrict) Start(ctx context.Context) error                                { return nil }
+func (m *mockFDMAgentStrict) Stop() error                                                    { return nil }
+func (m *mockFDMAgentStrict) NodeStates() map[string]fdm.NodeState                           { return nil }
+func (m *mockFDMAgentStrict) LocalDegradationLevel() fdm.DegradationLevel                    { return fdm.DegradationNone }
+func (m *mockFDMAgentStrict) IsLeader() bool                                                 { return m.isLeader }
+func (m *mockFDMAgentStrict) LeaderNodeID() string                                           { return "" }
+func (m *mockFDMAgentStrict) OnNodeFailure(callback func(nodeID string))                     {}
 func (m *mockFDMAgentStrict) OnDegradationChanged(callback func(level fdm.DegradationLevel)) {}
-func (m *mockFDMAgentStrict) ClusterView() fdm.ClusterView                            { return fdm.ClusterView{} }
+func (m *mockFDMAgentStrict) ClusterView() fdm.ClusterView                                   { return fdm.ClusterView{} }
 
 func TestEngine_Evaluate_NotLeader(t *testing.T) {
 	evaluator := &mockEvaluator{}

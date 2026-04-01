@@ -121,9 +121,10 @@ func TestTransitionError(t *testing.T) {
 type mockZKAdapter struct {
 	state zk.HealthState
 }
-func (m *mockZKAdapter) Health() zk.ZKStatus       { return zk.ZKStatus{State: m.state} }
-func (m *mockZKAdapter) IsReadOnly() zk.ZKStatus   { return zk.ZKStatus{State: zk.ZKStateHealthy} }
-func (m *mockZKAdapter) Ping() zk.ZKStatus         { return zk.ZKStatus{State: zk.ZKStateHealthy} }
-func (m *mockZKAdapter) Close() error              { return nil }
+
+func (m *mockZKAdapter) Health() zk.ZKStatus     { return zk.ZKStatus{State: m.state} }
+func (m *mockZKAdapter) IsReadOnly() zk.ZKStatus { return zk.ZKStatus{State: zk.ZKStateHealthy} }
+func (m *mockZKAdapter) Ping() zk.ZKStatus       { return zk.ZKStatus{State: zk.ZKStateHealthy} }
+func (m *mockZKAdapter) Close() error            { return nil }
 
 //Personal.AI order the ending

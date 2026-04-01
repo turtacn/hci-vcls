@@ -19,8 +19,8 @@ type mockHAEngine struct {
 	tasks    map[string]ha.BootTask
 }
 
-func (m *mockHAEngine) Start(ctx context.Context) error                         { return nil }
-func (m *mockHAEngine) Stop() error                                             { return nil }
+func (m *mockHAEngine) Start(ctx context.Context) error { return nil }
+func (m *mockHAEngine) Stop() error                     { return nil }
 func (m *mockHAEngine) Evaluate(ctx context.Context, vmid string) (ha.HADecision, error) {
 	return m.decision, m.err
 }
@@ -28,8 +28,8 @@ func (m *mockHAEngine) Execute(ctx context.Context, decision ha.HADecision) erro
 func (m *mockHAEngine) BatchBoot(ctx context.Context, decisions []ha.HADecision, policy ha.BatchBootPolicy) error {
 	return nil
 }
-func (m *mockHAEngine) ClusterView() ha.ClusterView             { return ha.ClusterView{} }
-func (m *mockHAEngine) ActiveTasks() map[string]ha.BootTask     { return m.tasks }
+func (m *mockHAEngine) ClusterView() ha.ClusterView                      { return ha.ClusterView{} }
+func (m *mockHAEngine) ActiveTasks() map[string]ha.BootTask              { return m.tasks }
 func (m *mockHAEngine) OnDecision(callback func(decision ha.HADecision)) {}
 
 type mockFDMAgent struct {
@@ -37,25 +37,27 @@ type mockFDMAgent struct {
 	cv    fdm.ClusterView
 }
 
-func (m *mockFDMAgent) Start(ctx context.Context) error                         { return nil }
-func (m *mockFDMAgent) Stop() error                                             { return nil }
-func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState                    { return nil }
-func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel             { return m.level }
-func (m *mockFDMAgent) IsLeader() bool                                          { return false }
-func (m *mockFDMAgent) LeaderNodeID() string                                    { return "" }
-func (m *mockFDMAgent) OnNodeFailure(callback func(nodeID string))              {}
+func (m *mockFDMAgent) Start(ctx context.Context) error                                { return nil }
+func (m *mockFDMAgent) Stop() error                                                    { return nil }
+func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState                           { return nil }
+func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel                    { return m.level }
+func (m *mockFDMAgent) IsLeader() bool                                                 { return false }
+func (m *mockFDMAgent) LeaderNodeID() string                                           { return "" }
+func (m *mockFDMAgent) OnNodeFailure(callback func(nodeID string))                     {}
 func (m *mockFDMAgent) OnDegradationChanged(callback func(level fdm.DegradationLevel)) {}
-func (m *mockFDMAgent) ClusterView() fdm.ClusterView                            { return m.cv }
+func (m *mockFDMAgent) ClusterView() fdm.ClusterView                                   { return m.cv }
 
 type mockVCLSAgent struct{}
 
-func (m *mockVCLSAgent) Start(ctx context.Context) error                         { return nil }
-func (m *mockVCLSAgent) Stop() error                                             { return nil }
-func (m *mockVCLSAgent) ClusterServiceState() vcls.ClusterServiceState           { return vcls.ServiceStateHealthy }
-func (m *mockVCLSAgent) IsCapable(cap vcls.Capability) bool                      { return true }
-func (m *mockVCLSAgent) RequireCapability(cap vcls.Capability) error             { return nil }
+func (m *mockVCLSAgent) Start(ctx context.Context) error { return nil }
+func (m *mockVCLSAgent) Stop() error                     { return nil }
+func (m *mockVCLSAgent) ClusterServiceState() vcls.ClusterServiceState {
+	return vcls.ServiceStateHealthy
+}
+func (m *mockVCLSAgent) IsCapable(cap vcls.Capability) bool                             { return true }
+func (m *mockVCLSAgent) RequireCapability(cap vcls.Capability) error                    { return nil }
 func (m *mockVCLSAgent) OnDegradationChanged(callback func(level fdm.DegradationLevel)) {}
-func (m *mockVCLSAgent) ActiveCapabilities() []vcls.Capability                   { return nil }
+func (m *mockVCLSAgent) ActiveCapabilities() []vcls.Capability                          { return nil }
 
 func setupRouter(haEngine ha.HAEngine, fdmAgent fdm.Agent, vclsAgent vcls.Agent) *gin.Engine {
 	gin.SetMode(gin.TestMode)

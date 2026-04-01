@@ -14,8 +14,8 @@ type mockCacheManager struct {
 	err         error
 }
 
-func (m *mockCacheManager) Start(ctx context.Context) error                         { return nil }
-func (m *mockCacheManager) Stop() error                                             { return nil }
+func (m *mockCacheManager) Start(ctx context.Context) error { return nil }
+func (m *mockCacheManager) Stop() error                     { return nil }
 func (m *mockCacheManager) GetComputeMeta(ctx context.Context, vmid string) (*cache.VMComputeMeta, error) {
 	return m.computeMeta, m.err
 }
@@ -35,15 +35,15 @@ type mockFDMAgent struct {
 	leaderID string
 }
 
-func (m *mockFDMAgent) Start(ctx context.Context) error                         { return nil }
-func (m *mockFDMAgent) Stop() error                                             { return nil }
-func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState                    { return nil }
-func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel             { return fdm.DegradationNone }
-func (m *mockFDMAgent) IsLeader() bool                                          { return true }
-func (m *mockFDMAgent) LeaderNodeID() string                                    { return m.leaderID }
-func (m *mockFDMAgent) OnNodeFailure(callback func(nodeID string))              {}
+func (m *mockFDMAgent) Start(ctx context.Context) error                                { return nil }
+func (m *mockFDMAgent) Stop() error                                                    { return nil }
+func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState                           { return nil }
+func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel                    { return fdm.DegradationNone }
+func (m *mockFDMAgent) IsLeader() bool                                                 { return true }
+func (m *mockFDMAgent) LeaderNodeID() string                                           { return m.leaderID }
+func (m *mockFDMAgent) OnNodeFailure(callback func(nodeID string))                     {}
 func (m *mockFDMAgent) OnDegradationChanged(callback func(level fdm.DegradationLevel)) {}
-func (m *mockFDMAgent) ClusterView() fdm.ClusterView                            { return fdm.ClusterView{} }
+func (m *mockFDMAgent) ClusterView() fdm.ClusterView                                   { return fdm.ClusterView{} }
 
 func TestEvaluator_Evaluate(t *testing.T) {
 	cacheMgr := &mockCacheManager{

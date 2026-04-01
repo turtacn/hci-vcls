@@ -7,11 +7,11 @@ import (
 )
 
 type electorImpl struct {
-	config     ElectionConfig
-	zkAdapter  zk.Adapter
-	isLeader   bool
-	leaderID   string
-	callbacks  []func(LeaderInfo)
+	config    ElectionConfig
+	zkAdapter zk.Adapter
+	isLeader  bool
+	leaderID  string
+	callbacks []func(LeaderInfo)
 }
 
 func NewElector(config ElectionConfig, adapter zk.Adapter) Elector {

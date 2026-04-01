@@ -33,4 +33,27 @@ type StateMachineConfig struct {
 	CooldownMs           int
 }
 
+type State string
+
+const (
+	StateInit       State = "init"
+	StateStable     State = "stable"
+	StateDegraded   State = "degraded"
+	StateEvaluating State = "evaluating"
+	StateFailover   State = "failover"
+	StateRecovered  State = "recovered"
+)
+
+type Event string
+
+const (
+	EventHeartbeatRestored   Event = "heartbeat_restored"
+	EventHeartbeatLost       Event = "heartbeat_lost"
+	EventDegradationDetected Event = "degradation_detected"
+	EventEvaluationStarted   Event = "evaluation_started"
+	EventFailoverTriggered   Event = "failover_triggered"
+	EventFailoverCompleted   Event = "failover_completed"
+	EventRecoveredSignal     Event = "recovered_signal"
+)
+
 //Personal.AI order the ending

@@ -4,16 +4,16 @@ import (
 	"context"
 
 	"github.com/turtacn/hci-vcls/internal/heartbeat"
-	"github.com/turtacn/hci-vcls/pkg/witness"
 	"github.com/turtacn/hci-vcls/internal/logger"
 	"github.com/turtacn/hci-vcls/pkg/metrics"
+	"github.com/turtacn/hci-vcls/pkg/witness"
 )
 
 type proberImpl struct {
-	hb       heartbeat.Heartbeater
-	pool     witness.Pool
-	log      logger.Logger
-	metrics  metrics.Metrics
+	hb      heartbeat.Heartbeater
+	pool    witness.Pool
+	log     logger.Logger
+	metrics metrics.Metrics
 }
 
 func NewProber(hb heartbeat.Heartbeater, pool witness.Pool, log logger.Logger, m metrics.Metrics) Prober {

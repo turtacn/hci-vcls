@@ -5,19 +5,21 @@ import (
 	"testing"
 
 	"github.com/turtacn/hci-vcls/internal/heartbeat"
-	"github.com/turtacn/hci-vcls/pkg/witness"
-	"github.com/turtacn/hci-vcls/pkg/metrics"
 	"github.com/turtacn/hci-vcls/internal/logger"
+	"github.com/turtacn/hci-vcls/pkg/metrics"
+	"github.com/turtacn/hci-vcls/pkg/witness"
 )
 
 type mockHeartbeater struct{}
 
-func (m *mockHeartbeater) Start(ctx context.Context) error                         { return nil }
-func (m *mockHeartbeater) Stop() error                                             { return nil }
-func (m *mockHeartbeater) PeerState(nodeID string) (heartbeat.HeartbeatState, error) { return heartbeat.HeartbeatState{}, nil }
-func (m *mockHeartbeater) AllPeerStates() map[string]heartbeat.HeartbeatState      { return nil }
-func (m *mockHeartbeater) OnPeerDead(callback func(nodeID string))                 {}
-func (m *mockHeartbeater) OnPeerRecovered(callback func(nodeID string))            {}
+func (m *mockHeartbeater) Start(ctx context.Context) error { return nil }
+func (m *mockHeartbeater) Stop() error                     { return nil }
+func (m *mockHeartbeater) PeerState(nodeID string) (heartbeat.HeartbeatState, error) {
+	return heartbeat.HeartbeatState{}, nil
+}
+func (m *mockHeartbeater) AllPeerStates() map[string]heartbeat.HeartbeatState { return nil }
+func (m *mockHeartbeater) OnPeerDead(callback func(nodeID string))            {}
+func (m *mockHeartbeater) OnPeerRecovered(callback func(nodeID string))       {}
 
 type mockWitnessPool struct{}
 

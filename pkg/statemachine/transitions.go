@@ -24,7 +24,19 @@ func Evaluate(input EvaluationInput) EvaluationResult {
 }
 
 func IsValidTransition(from, to fdm.DegradationLevel) bool {
-	// For simplicity, allow all transitions initially. This can be refined later.
+	// MVP rules: any state can transition to DegradationNone if it recovers
+	if to == fdm.DegradationNone {
+		return true
+	}
+
+	// None can jump to any degradation level
+	if from == fdm.DegradationNone {
+		return true
+	}
+
+	// Existing degradations can escalate or switch depending on probe results
+	// To prevent flip-flopping, we could add stricter constraints, but for now
+	// allowing dynamic transitions as FDM evaluation overrides it based on current snapshot
 	return true
 }
 

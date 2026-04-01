@@ -14,8 +14,8 @@ type Server struct {
 	proto.UnimplementedFDMServiceServer
 	proto.UnimplementedStatusServiceServer
 
-	haEngine ha.HAEngine
-	fdmAgent fdm.Agent
+	haEngine  ha.HAEngine
+	fdmAgent  fdm.Agent
 	vclsAgent vcls.Agent
 }
 

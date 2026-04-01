@@ -13,13 +13,13 @@ type mockFDMAgent struct {
 	cb    func(fdm.DegradationLevel)
 }
 
-func (m *mockFDMAgent) Start(ctx context.Context) error                         { return nil }
-func (m *mockFDMAgent) Stop() error                                             { return nil }
-func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState                    { return nil }
-func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel             { return m.level }
-func (m *mockFDMAgent) IsLeader() bool                                          { return false }
-func (m *mockFDMAgent) LeaderNodeID() string                                    { return "" }
-func (m *mockFDMAgent) OnNodeFailure(callback func(nodeID string))              {}
+func (m *mockFDMAgent) Start(ctx context.Context) error             { return nil }
+func (m *mockFDMAgent) Stop() error                                 { return nil }
+func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState        { return nil }
+func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel { return m.level }
+func (m *mockFDMAgent) IsLeader() bool                              { return false }
+func (m *mockFDMAgent) LeaderNodeID() string                        { return "" }
+func (m *mockFDMAgent) OnNodeFailure(callback func(nodeID string))  {}
 func (m *mockFDMAgent) OnDegradationChanged(callback func(level fdm.DegradationLevel)) {
 	m.cb = callback
 }

@@ -16,9 +16,9 @@ const (
 type ClusterServiceState string
 
 const (
-	ServiceStateHealthy   ClusterServiceState = "HEALTHY"
-	ServiceStateDegraded  ClusterServiceState = "DEGRADED"
-	ServiceStateOffline   ClusterServiceState = "OFFLINE"
+	ServiceStateHealthy  ClusterServiceState = "HEALTHY"
+	ServiceStateDegraded ClusterServiceState = "DEGRADED"
+	ServiceStateOffline  ClusterServiceState = "OFFLINE"
 )
 
 type CapabilityMatrix map[fdm.DegradationLevel][]Capability

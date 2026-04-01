@@ -1,8 +1,8 @@
 package election
 
 type ElectionConfig struct {
-	NodeID         string
-	ZKElectionPath string
+	NodeID           string
+	ZKElectionPath   string
 	SessionTimeoutMs int
 	RetryIntervalMs  int
 }

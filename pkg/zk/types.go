@@ -27,9 +27,9 @@ type ZKStatus struct {
 }
 
 type ZKConfig struct {
-	Endpoints    []string
+	Endpoints        []string
 	SessionTimeoutMs int
-	ElectionPath string
+	ElectionPath     string
 }
 
 //Personal.AI order the ending
