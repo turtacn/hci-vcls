@@ -1,6 +1,6 @@
 # Binaries
 bin/
-hci-vcls
+/hci-vcls
 
 # Test output
 coverage.out
