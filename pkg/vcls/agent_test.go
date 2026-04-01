@@ -71,7 +71,7 @@ func TestAgent_Degradation(t *testing.T) {
 
 	caps := agent.ActiveCapabilities()
 	if len(caps) != 3 {
-		t.Errorf("Expected 3 active capabilities for DegradationZK, got %d", len(caps))
+		t.Errorf("Expected 3 active capabilities for DegradationMinor, got %d", len(caps))
 	}
 
 	if !agent.IsCapable(CapabilityHA) {
