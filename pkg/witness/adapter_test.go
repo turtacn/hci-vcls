@@ -21,7 +21,7 @@ func TestPool_ConfirmFailure(t *testing.T) {
 	log := mockLogger{}
 
 	config := WitnessConfig{Endpoints: []string{"http://w1:8080"}}
-	pool, _ := NewPool(config, nil)
+	pool, _ := NewPool(config, log)
 
 	req := ConfirmationRequest{NodeID: "node-1"}
 	confirmed := pool.ConfirmFailure(ctx, req)
@@ -41,16 +41,17 @@ func TestPool_ConfirmFailure(t *testing.T) {
 
 func TestPool_Quorum(t *testing.T) {
 	ctx := context.Background()
+	log := mockLogger{}
 
 	config := WitnessConfig{Endpoints: []string{"http://w1:8080", "http://w2:8080"}}
-	pool, _ := NewPool(config, nil)
+	pool, _ := NewPool(config, log)
 
 	if !pool.Quorum(ctx) {
 		t.Errorf("Expected quorum to be true")
 	}
 
 	configEmpty := WitnessConfig{Endpoints: []string{}}
-	poolEmpty, _ := NewPool(configEmpty, nil)
+	poolEmpty, _ := NewPool(configEmpty, log)
 
 	if poolEmpty.Quorum(ctx) {
 		t.Errorf("Expected quorum to be false")
@@ -59,8 +60,9 @@ func TestPool_Quorum(t *testing.T) {
 
 func TestPool_Statuses(t *testing.T) {
 	ctx := context.Background()
+	log := mockLogger{}
 	config := WitnessConfig{Endpoints: []string{"http://w1:8080", "http://w2:8080"}}
-	pool, _ := NewPool(config, nil)
+	pool, _ := NewPool(config, log)
 
 	statuses := pool.Statuses(ctx)
 
@@ -77,9 +79,10 @@ func TestPool_Statuses(t *testing.T) {
 
 func TestAdapter_Health(t *testing.T) {
 	ctx := context.Background()
+	log := mockLogger{}
 
 	config := WitnessConfig{Endpoints: []string{"http://w1:8080"}}
-	adapter, _ := NewAdapter(config, nil)
+	adapter, _ := NewAdapter(config, log)
 
 	status := adapter.Health(ctx)
 	if status != StatusHealthy {
@@ -87,7 +90,7 @@ func TestAdapter_Health(t *testing.T) {
 	}
 
 	configEmpty := WitnessConfig{Endpoints: []string{}}
-	adapterEmpty, _ := NewAdapter(configEmpty, nil)
+	adapterEmpty, _ := NewAdapter(configEmpty, log)
 
 	statusEmpty := adapterEmpty.Health(ctx)
 	if statusEmpty != StatusUnknown {
@@ -97,8 +100,9 @@ func TestAdapter_Health(t *testing.T) {
 
 func TestAdapter_ConfirmFailure(t *testing.T) {
 	ctx := context.Background()
+	log := mockLogger{}
 	config := WitnessConfig{Endpoints: []string{"http://w1:8080"}}
-	adapter, _ := NewAdapter(config, nil)
+	adapter, _ := NewAdapter(config, log)
 
 	req := ConfirmationRequest{NodeID: "node-1"}
 	resp := adapter.ConfirmFailure(ctx, req)

@@ -21,6 +21,11 @@ lint:
 	golangci-lint run
 
 proto:
+	@if ! command -v protoc >/dev/null 2>&1; then \
+		echo "protoc could not be found. Please install protobuf-compiler."; \
+		echo "For Debian/Ubuntu: sudo apt-get install -y protobuf-compiler"; \
+		exit 1; \
+	fi
 	export PATH="$$PATH:$$(go env GOPATH)/bin" && \
 	protoc --go_out=. --go_opt=paths=source_relative \
 		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
@@ -31,7 +36,7 @@ clean:
 	rm -f pkg/api/proto/*.pb.go
 
 coverage:
-	go test -coverprofile=coverage.out ./pkg/... ./internal/...
+	go test -coverprofile=coverage.out -coverpkg=./... $(shell go list ./pkg/... ./internal/... | grep -v /pkg/api/proto)
 	go tool cover -html=coverage.out
 
 # Personal.AI order the ending

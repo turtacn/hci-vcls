@@ -48,8 +48,13 @@ func Load(path string) (*Config, error) {
 	setDefaults(v)
 
 	if err := v.ReadInConfig(); err != nil {
+		// Viper returns different error types/messages depending on how it's initialized.
+		// If the file simply doesn't exist, we can ignore the error.
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("error reading config file: %w", err)
+			// also check if the error is due to os.ErrNotExist, which can be wrapped
+			if !strings.Contains(err.Error(), "no such file or directory") {
+				return nil, fmt.Errorf("error reading config file: %w", err)
+			}
 		}
 	}
 
