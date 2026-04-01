@@ -120,7 +120,7 @@ func (a *agentImpl) probeLoop() {
 				}
 			}
 
-			newLevel := a.degradationLevel
+			var newLevel DegradationLevel
 			if allFailed {
 				newLevel = DegradationAll
 			} else {

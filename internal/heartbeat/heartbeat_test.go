@@ -78,7 +78,7 @@ func TestHeartbeater_PeerTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to start heartbeater: %v", err)
 	}
-	defer hb.Stop()
+	defer func() { _ = hb.Stop() }()
 
 	// Wait for peer to timeout (TimeoutMs is 20ms, IntervalMs is 10ms)
 	select {

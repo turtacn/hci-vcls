@@ -22,7 +22,7 @@ func NewBatchExecutor(qmExecutor qm.Executor) BatchExecutor {
 
 func (b *batchExecutorImpl) Execute(ctx context.Context, tasks []BootTask, policy BatchBootPolicy) error {
 	for _, t := range tasks {
-		b.AddTask(t)
+		_ = b.AddTask(t)
 	}
 
 	for vmid, t := range b.tasks {

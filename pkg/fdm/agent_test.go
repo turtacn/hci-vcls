@@ -115,7 +115,7 @@ func TestAgent_Degradation(t *testing.T) {
 	})
 
 	_ = agent.Start(ctx)
-	defer agent.Stop()
+	defer func() { _ = agent.Stop() }()
 
 	// Wait for degradation due to all probes failing
 	select {

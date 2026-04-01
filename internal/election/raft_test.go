@@ -26,7 +26,7 @@ func TestElector_CampaignResign(t *testing.T) {
 		t.Errorf("Expected not to be leader initially")
 	}
 
-	leaderID, err := elector.LeaderID()
+	_, err := elector.LeaderID()
 	if err != ErrNoLeader {
 		t.Errorf("Expected ErrNoLeader, got %v", err)
 	}
@@ -46,7 +46,7 @@ func TestElector_CampaignResign(t *testing.T) {
 		t.Errorf("Expected to be leader after campaign")
 	}
 
-	leaderID, err = elector.LeaderID()
+	leaderID, err := elector.LeaderID()
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -68,7 +68,7 @@ func TestElector_CampaignResign(t *testing.T) {
 		t.Errorf("Expected not to be leader after resign")
 	}
 
-	leaderID, err = elector.LeaderID()
+	_, err = elector.LeaderID()
 	if err != ErrNoLeader {
 		t.Errorf("Expected ErrNoLeader, got %v", err)
 	}

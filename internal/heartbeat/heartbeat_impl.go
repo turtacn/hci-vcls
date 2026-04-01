@@ -96,10 +96,10 @@ func (h *heartbeaterImpl) notifyDead(nodeID string) {
 	}
 }
 
-func (h *heartbeaterImpl) notifyRecovered(nodeID string) {
-	for _, cb := range h.recoveredCbs {
-		cb(nodeID)
-	}
-}
+// func (h *heartbeaterImpl) notifyRecovered(nodeID string) {
+// 	for _, cb := range h.recoveredCbs {
+// 		cb(nodeID)
+// 	}
+// }
 
 //Personal.AI order the ending

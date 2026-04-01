@@ -94,9 +94,9 @@ func (e *engineImpl) Execute(ctx context.Context, decision HADecision) error {
 	result := e.qmExec.Start(ctx, decision.VMID, opts)
 
 	if result.Success {
-		e.mysqlAdp.ConfirmBoot(decision.VMID, claim.Token)
+		_ = e.mysqlAdp.ConfirmBoot(decision.VMID, claim.Token)
 	} else {
-		e.mysqlAdp.ReleaseBoot(decision.VMID, claim.Token)
+		_ = e.mysqlAdp.ReleaseBoot(decision.VMID, claim.Token)
 		return result.Error
 	}
 

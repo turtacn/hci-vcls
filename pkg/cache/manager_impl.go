@@ -51,7 +51,7 @@ func (m *cacheManagerImpl) GetComputeMeta(ctx context.Context, vmid string) (*VM
 		m.stats.Misses++
 		meta, err = m.metaSource.FetchVMComputeMeta(ctx, vmid)
 		if err == nil && meta != nil {
-			m.cStore.Put(vmid, *meta)
+			_ = m.cStore.Put(vmid, *meta)
 			m.stats.TotalEntries++
 		}
 	} else if err == nil {

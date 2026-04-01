@@ -2,7 +2,6 @@ package cache
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -21,7 +20,7 @@ func NewLocalStore(baseDir string) (Store, error) {
 
 func (s *localStore) Get(vmid string) (*VMComputeMeta, error) {
 	path := filepath.Join(s.baseDir, vmid+".json")
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, ErrCacheMiss
@@ -43,7 +42,7 @@ func (s *localStore) Put(vmid string, meta VMComputeMeta) error {
 		return err
 	}
 	path := filepath.Join(s.baseDir, vmid+".json")
-	return ioutil.WriteFile(path, data, 0644)
+	return os.WriteFile(path, data, 0644)
 }
 
 func (s *localStore) Delete(vmid string) error {
@@ -56,7 +55,7 @@ func (s *localStore) Delete(vmid string) error {
 }
 
 func (s *localStore) List() ([]VMComputeMeta, error) {
-	files, err := ioutil.ReadDir(s.baseDir)
+	files, err := os.ReadDir(s.baseDir)
 	if err != nil {
 		return nil, err
 	}

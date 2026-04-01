@@ -5,34 +5,6 @@ import (
 	"testing"
 )
 
-type mockAdapter struct {
-	config CFSConfig
-	health HealthState
-	err    error
-	closed bool
-}
-
-func (m *mockAdapter) Health() CFSStatus {
-	return CFSStatus{State: m.health, Error: m.err}
-}
-
-func (m *mockAdapter) IsWritable() CFSStatus {
-	return CFSStatus{State: m.health, Error: m.err}
-}
-
-func (m *mockAdapter) ReadVMConfig(vmid string) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func (m *mockAdapter) ListVMIDs() ([]string, error) {
-	return []string{}, nil
-}
-
-func (m *mockAdapter) Close() error {
-	m.closed = true
-	return nil
-}
-
 func TestCFSAdapter(t *testing.T) {
 	dir := t.TempDir()
 	config := CFSConfig{MountPath: dir, TimeoutMs: 100}
