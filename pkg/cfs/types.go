@@ -34,4 +34,19 @@ type CFSStatus struct {
 	Error error
 }
 
+type VM struct {
+	ID         string
+	ClusterID  string
+	HostID     string
+	PowerState string // running, stopped, unknown
+	Name       string
+}
+
+type Host struct {
+	ID        string
+	ClusterID string
+	IP        string
+	Healthy   bool
+}
+
 //Personal.AI order the ending

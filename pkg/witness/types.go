@@ -1,5 +1,7 @@
 package witness
 
+import "time"
+
 type WitnessRole string
 
 const (
@@ -18,6 +20,13 @@ const (
 type WitnessConfig struct {
 	Endpoints []string
 	TimeoutMs int
+}
+
+type WitnessState struct {
+	VMID      string
+	Available bool
+	CheckedAt time.Time
+	Reason    string
 }
 
 type ConfirmationRequest struct {

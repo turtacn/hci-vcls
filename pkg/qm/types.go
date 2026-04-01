@@ -1,5 +1,7 @@
 package qm
 
+import "time"
+
 type VMStatus string
 
 const (
@@ -19,6 +21,26 @@ type BootResult struct {
 
 type QMConfig struct {
 	TimeoutMs int
+}
+
+type TaskStatus string
+
+const (
+	TaskPending   TaskStatus = "Pending"
+	TaskRunning   TaskStatus = "Running"
+	TaskDone      TaskStatus = "Done"
+	TaskFailed    TaskStatus = "Failed"
+)
+
+type Task struct {
+	ID         string
+	VMID       string
+	ClusterID  string
+	TargetHost string
+	BootPath   string
+	Status     TaskStatus
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 //Personal.AI order the ending
