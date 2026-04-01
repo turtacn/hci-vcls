@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-playground/validator/v10"
+	validator "github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 	"github.com/turtacn/hci-vcls/internal/election"
 	"github.com/turtacn/hci-vcls/internal/heartbeat"

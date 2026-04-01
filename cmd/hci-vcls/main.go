@@ -18,12 +18,4 @@ func main() {
 	}
 }
 
-// Execute is a placeholder for the root command execution.
-// It will be replaced by the cobra root command in cmd/hci-vcls/root.go
-func Execute() error {
-	fmt.Println("HCI vCLS Service")
-	fmt.Printf("Version: %s, Commit: %s, Date: %s\n", BuildVersion, BuildCommit, BuildDate)
-	return nil
-}
-
 //Personal.AI order the ending

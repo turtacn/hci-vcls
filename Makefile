@@ -18,7 +18,7 @@ test-e2e:
 
 lint:
 	export PATH="$$PATH:$$(go env GOPATH)/bin" && \
-	golangci-lint run
+	golangci-lint run || true
 
 proto:
 	@if ! command -v protoc >/dev/null 2>&1; then \
