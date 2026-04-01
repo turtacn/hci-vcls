@@ -27,9 +27,37 @@ type ZKStatus struct {
 }
 
 type ZKConfig struct {
-	Endpoints    []string
+	Endpoints        []string
 	SessionTimeoutMs int
-	ElectionPath string
+	ElectionPath     string
 }
 
-//Personal.AI order the ending
+type SessionState int
+
+const (
+	Disconnected SessionState = iota
+	Connected
+	Expired
+)
+
+type ZNode struct {
+	Path    string
+	Data    string
+	Version int32
+}
+
+type EventType int
+
+const (
+	EventNodeCreated EventType = iota
+	EventNodeDeleted
+	EventNodeDataChanged
+	EventSession
+)
+
+type WatchEvent struct {
+	Path string
+	Type EventType
+}
+
+// Personal.AI order the ending

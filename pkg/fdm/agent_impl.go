@@ -53,7 +53,7 @@ func (a *agentImpl) Start(ctx context.Context) error {
 		a.leaderID = info.NodeID
 		a.isLeader = (info.NodeID == a.config.NodeID)
 		if a.isLeader {
-			a.metrics.IncLeaderChanges(metrics.MetricLabels{metrics.LabelClusterID: a.config.ClusterID, metrics.LabelNodeID: a.config.NodeID})
+			a.metrics.IncLeaderChange(a.config.ClusterID)
 		}
 	})
 
@@ -129,7 +129,7 @@ func (a *agentImpl) probeLoop() {
 
 			if newLevel != a.degradationLevel {
 				a.degradationLevel = newLevel
-				a.metrics.SetDegradationLevel(float64(newLevel), metrics.MetricLabels{metrics.LabelClusterID: a.config.ClusterID})
+				a.metrics.SetDegradationLevel(a.config.ClusterID, float64(newLevel))
 				for _, cb := range a.degradationCbs {
 					cb(newLevel)
 				}

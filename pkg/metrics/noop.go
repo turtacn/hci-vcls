@@ -2,16 +2,18 @@ package metrics
 
 type NoopMetrics struct{}
 
-func NewNoopMetrics() Metrics {
+var _ Metrics = &NoopMetrics{}
+
+func NewNoopMetrics() *NoopMetrics {
 	return &NoopMetrics{}
 }
 
-func (m *NoopMetrics) IncHABootTotal(labels MetricLabels)                                   {}
-func (m *NoopMetrics) ObserveHABootDuration(durationSeconds float64, labels MetricLabels) {}
-func (m *NoopMetrics) IncFDMHeartbeatLost(labels MetricLabels)                              {}
-func (m *NoopMetrics) SetDegradationLevel(level float64, labels MetricLabels)               {}
-func (m *NoopMetrics) SetCacheAgeSeconds(ageSeconds float64, labels MetricLabels)           {}
-func (m *NoopMetrics) IncElectionTotal(labels MetricLabels)                                 {}
-func (m *NoopMetrics) IncLeaderChanges(labels MetricLabels)                                 {}
+func (m *NoopMetrics) IncElectionTotal(node, result string)            {}
+func (m *NoopMetrics) IncLeaderChange(cluster string)                  {}
+func (m *NoopMetrics) IncHeartbeatLost(node, cluster string)           {}
+func (m *NoopMetrics) SetDegradationLevel(cluster string, level float64) {}
+func (m *NoopMetrics) IncHATaskTotal(cluster, status string)           {}
+func (m *NoopMetrics) ObserveHAExecutionDuration(cluster string, seconds float64) {}
+func (m *NoopMetrics) SetProtectedVMCount(cluster string, count float64) {}
 
-//Personal.AI order the ending
+// Personal.AI order the ending

@@ -1,13 +1,13 @@
 package metrics
 
 type Metrics interface {
-	IncHABootTotal(labels MetricLabels)
-	ObserveHABootDuration(durationSeconds float64, labels MetricLabels)
-	IncFDMHeartbeatLost(labels MetricLabels)
-	SetDegradationLevel(level float64, labels MetricLabels)
-	SetCacheAgeSeconds(ageSeconds float64, labels MetricLabels)
-	IncElectionTotal(labels MetricLabels)
-	IncLeaderChanges(labels MetricLabels)
+	IncElectionTotal(node, result string)
+	IncLeaderChange(cluster string)
+	IncHeartbeatLost(node, cluster string)
+	SetDegradationLevel(cluster string, level float64)
+	IncHATaskTotal(cluster, status string)
+	ObserveHAExecutionDuration(cluster string, seconds float64)
+	SetProtectedVMCount(cluster string, count float64)
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending
