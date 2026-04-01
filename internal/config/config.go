@@ -1,7 +1,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -48,8 +50,16 @@ func Load(path string) (*Config, error) {
 	setDefaults(v)
 
 	if err := v.ReadInConfig(); err != nil {
+		// Viper sometimes returns a PathError or similar when the file doesn't exist,
+		// depending on how it was initialized. We want to ignore "not found" errors.
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("error reading config file: %w", err)
+			// Also check if it's a generic file not found error using errors.Is
+			if !errors.Is(err, os.ErrNotExist) {
+				var pathErr *os.PathError
+				if !errors.As(err, &pathErr) {
+					return nil, fmt.Errorf("error reading config file: %w", err)
+				}
+			}
 		}
 	}
 
