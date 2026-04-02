@@ -1,8 +1,19 @@
 package election
 
+import (
+	"time"
+)
+
+type LeaderStatus struct {
+	LeaderID  string
+	IsLeader  bool
+	Term      int64
+	UpdatedAt time.Time
+}
+
 type ElectionConfig struct {
-	NodeID         string
-	ZKElectionPath string
+	NodeID           string
+	ZKElectionPath   string
 	SessionTimeoutMs int
 	RetryIntervalMs  int
 }
@@ -12,4 +23,4 @@ type LeaderInfo struct {
 	Term   uint64
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

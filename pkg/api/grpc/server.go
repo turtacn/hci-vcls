@@ -28,7 +28,7 @@ func NewServer(haEngine ha.HAEngine, fdmAgent fdm.Agent, vclsAgent vcls.Agent) *
 }
 
 func (s *Server) Evaluate(ctx context.Context, req *proto.EvaluateRequest) (*proto.EvaluateResponse, error) {
-	decision, err := s.haEngine.Evaluate(ctx, req.Vmid)
+	decision, err := s.haEngine.Evaluate(req.Vmid)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (s *Server) GetClusterStatus(ctx context.Context, req *proto.GetClusterStat
 
 func (s *Server) GetDegradation(ctx context.Context, req *proto.GetDegradationRequest) (*proto.GetDegradationResponse, error) {
 	return &proto.GetDegradationResponse{
-		Level: int32(s.fdmAgent.LocalDegradationLevel()),
+		Level: int32(fdm.LevelWeight(s.fdmAgent.LocalDegradationLevel())),
 	}, nil
 }
 
@@ -81,7 +81,7 @@ func (s *Server) GetFullStatus(ctx context.Context, req *proto.GetFullStatusRequ
 
 	return &proto.GetFullStatusResponse{
 		LeaderId:           s.fdmAgent.LeaderNodeID(),
-		DegradationLevel:   int32(level),
+		DegradationLevel:   int32(fdm.LevelWeight(level)),
 		ActiveCapabilities: capStrings,
 	}, nil
 }

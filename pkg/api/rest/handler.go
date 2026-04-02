@@ -57,7 +57,7 @@ func (h *Handler) GetTasks(c *gin.Context) {
 
 func (h *Handler) Evaluate(c *gin.Context) {
 	vmid := c.Param("vmid")
-	decision, err := h.haEngine.Evaluate(c.Request.Context(), vmid)
+	decision, err := h.haEngine.Evaluate(vmid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -6,9 +6,10 @@ type Elector interface {
 	Campaign(ctx context.Context) error
 	Resign(ctx context.Context) error
 	IsLeader() bool
-	LeaderID() (string, error)
-	OnLeaderChange(callback func(LeaderInfo))
+	Status() LeaderStatus
+	Watch() <-chan LeaderStatus
 	Close() error
+	OnLeaderChange(callback func(info LeaderInfo)) // backward compat
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

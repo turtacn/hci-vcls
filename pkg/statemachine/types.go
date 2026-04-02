@@ -9,6 +9,36 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/zk"
 )
 
+type State string
+
+const (
+	StateInit       State = "init"
+	StateStable     State = "stable"
+	StateDegraded   State = "degraded"
+	StateEvaluating State = "evaluating" // 新增：FDM评估中
+	StateFailover   State = "failover"
+	StateRecovered  State = "recovered"
+)
+
+type Event string
+
+const (
+	EventHeartbeatRestored   Event = "heartbeat_restored"
+	EventHeartbeatLost       Event = "heartbeat_lost"
+	EventDegradationDetected Event = "degradation_detected"
+	EventEvaluationStarted   Event = "evaluation_started"
+	EventFailoverTriggered   Event = "failover_triggered"
+	EventFailoverCompleted   Event = "failover_completed"
+	EventRecoveredSignal     Event = "recovered_signal"
+)
+
+type StateTransition struct {
+	From      State
+	To        State
+	Event     Event
+	Timestamp time.Time
+}
+
 type Transition struct {
 	From      fdm.DegradationLevel
 	To        fdm.DegradationLevel
@@ -33,4 +63,4 @@ type StateMachineConfig struct {
 	CooldownMs           int
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

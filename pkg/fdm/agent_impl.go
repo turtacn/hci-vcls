@@ -96,10 +96,25 @@ func (a *agentImpl) OnDegradationChanged(callback func(level DegradationLevel)) 
 }
 
 func (a *agentImpl) ClusterView() ClusterView {
+	// Map string level to old int level for compat temporarily
+	var oldLevel OldDegradationLevel
+	switch a.degradationLevel {
+	case DegradationNone:
+		oldLevel = OldDegradationNone
+	case DegradationMinor:
+		oldLevel = OldDegradationZK // mock mapping
+	case DegradationMajor:
+		oldLevel = OldDegradationCFS
+	case DegradationCritical:
+		oldLevel = OldDegradationAll
+	default:
+		oldLevel = OldDegradationNone
+	}
+
 	return ClusterView{
 		LeaderID:         a.leaderID,
 		Nodes:            a.nodeStates,
-		DegradationLevel: a.degradationLevel,
+		DegradationLevel: oldLevel,
 	}
 }
 
@@ -122,14 +137,14 @@ func (a *agentImpl) probeLoop() {
 
 			var newLevel DegradationLevel
 			if allFailed {
-				newLevel = DegradationAll
+				newLevel = DegradationCritical
 			} else {
 				newLevel = DegradationNone
 			}
 
 			if newLevel != a.degradationLevel {
 				a.degradationLevel = newLevel
-				a.metrics.SetDegradationLevel(a.config.ClusterID, float64(newLevel))
+				a.metrics.SetDegradationLevel(a.config.ClusterID, float64(LevelWeight(newLevel)))
 				for _, cb := range a.degradationCbs {
 					cb(newLevel)
 				}
