@@ -2,6 +2,22 @@ package heartbeat
 
 import "time"
 
+type Sample struct {
+	NodeID     string
+	ClusterID  string
+	ReceivedAt time.Time
+}
+
+type Summary struct {
+	NodeID     string
+	ClusterID  string
+	LastSeenAt time.Time
+	LostCount  int
+	Healthy    bool
+	ObservedAt time.Time
+}
+
+// Old types to keep compilation for other packages
 type HeartbeatLevel int
 
 const (
@@ -28,4 +44,4 @@ type HeartbeatState struct {
 	IsAlive  bool
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

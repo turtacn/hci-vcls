@@ -1,0 +1,53 @@
+# HCI vCLS Full Default Configuration
+node:
+  node_id: "hci-node-1"
+  cluster_id: "cluster-1"
+  host_ip: "127.0.0.1"
+
+server:
+  http_addr: ":8080"
+  grpc_addr: ":9090"
+
+log:
+  level: "info"
+  format: "json"
+
+zk:
+  endpoints:
+    - "zookeeper:2181"
+  session_timeout: 5s
+
+mysql:
+  dsn: "hci:hci@tcp(mysql:3306)/vcls?parseTime=true"
+  max_open_conns: 20
+
+heartbeat:
+  interval: 5s
+  timeout: 15s
+  window_size: 10
+
+election:
+  lease_ttl: 10s
+  renew_interval: 3s
+
+fdm:
+  eval_interval: 10s
+  quorum_ratio: 0.51
+  critical_threshold: 3
+
+ha:
+  batch_size: 5
+  batch_interval: 2s
+  cooldown: 30s
+  fail_fast: true
+
+cache:
+  default_ttl: 60s
+  max_entries: 1000
+
+metrics:
+  addr: ":9091"
+  namespace: "hci_vcls"
+
+grpc:
+  max_recv_msg_size: 4194304

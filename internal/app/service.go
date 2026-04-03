@@ -25,7 +25,7 @@ type Service struct {
 	logger       *zap.Logger
 	metrics      metrics.Metrics
 	election     election.Elector
-	heartbeat    heartbeat.Heartbeater
+	heartbeat    *heartbeat.HeartbeatService
 	vcls         vcls.Service
 	planner      ha.Planner
 	executor     ha.Executor
@@ -40,7 +40,7 @@ func NewService(
 	log *zap.Logger,
 	m metrics.Metrics,
 	e election.Elector,
-	hb heartbeat.Heartbeater,
+	hb *heartbeat.HeartbeatService,
 	v vcls.Service,
 	p ha.Planner,
 	ex ha.Executor,
@@ -63,6 +63,14 @@ func NewService(
 		planRepo:     plan,
 		fdmAgent:     fdm,
 	}
+}
+
+func (s *Service) Planner() ha.Planner {
+	return s.planner
+}
+
+func (s *Service) Executor() ha.Executor {
+	return s.executor
 }
 
 // Personal.AI order the ending

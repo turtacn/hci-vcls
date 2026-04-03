@@ -1,6 +1,25 @@
 package ha
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrNoCandidateHost = errors.New("no healthy candidate host available")
+	ErrEmptyClusterID  = errors.New("cluster id must not be empty")
+	ErrNoProtectedVMs  = errors.New("no protected VMs eligible for HA")
+	ErrInvalidPlan     = errors.New("plan is invalid or empty")
+	ErrPartialFailure  = errors.New("HA execution completed with partial failures")
+	ErrLeadershipLost  = errors.New("leadership lost during HA execution")
+)
+
+var (
+	ErrVMNotProtected = errors.New("VM is not protected for HA")
+	ErrVMNotFound     = errors.New("VM not found")
+)
+
+// Old errors to keep compatibility
 
 type BootError struct {
 	Code    string
@@ -29,4 +48,4 @@ var (
 	ErrInsufficientResources = &BootError{Code: "ERR_INSUFFICIENT_RESOURCES", Message: "insufficient resources on target node"}
 )
 
-//Personal.AI order the ending
+// Personal.AI order the ending

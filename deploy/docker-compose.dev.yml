@@ -1,0 +1,31 @@
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3.8
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=vcls
+      - MYSQL_USER=hci
+      - MYSQL_PASSWORD=hci
+    ports:
+      - "3306:3306"
+
+  hci-vcls:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    depends_on:
+      - zookeeper
+      - mysql
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+      - "9091:9091"
+    volumes:
+      - ./config.yaml:/etc/hci-vcls/config.yaml

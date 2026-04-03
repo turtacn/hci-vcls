@@ -43,8 +43,10 @@ func NewService(store Store, cfsClient cfs.Client, repo mysql.VMRepository, witn
 func (s *serviceImpl) Refresh(ctx context.Context, clusterID string) error {
 	// Basic debouncing via cache
 	cacheKey := fmt.Sprintf("refresh_%s", clusterID)
-	if _, ok := s.cache.Get(cacheKey); ok {
-		return nil
+	if s.cache != nil {
+		if _, ok := s.cache.Get(cacheKey); ok {
+			return nil
+		}
 	}
 
 	// 1. Fetch raw VMs from CFS
@@ -130,7 +132,9 @@ func (s *serviceImpl) Refresh(ctx context.Context, clusterID string) error {
 		s.cache.Set(cacheKey, true, 5*time.Second)
 	}
 
-	s.log.Info("VCLS Refreshed", "clusterID", clusterID, "vms", len(cfsVMs), "eligible", eligibleCount)
+	if s.log != nil {
+		s.log.Info("VCLS Refreshed", "clusterID", clusterID, "vms", len(cfsVMs), "eligible", eligibleCount)
+	}
 	return nil
 }
 
