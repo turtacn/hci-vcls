@@ -19,343 +19,237 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	HAService_Evaluate_FullMethodName       = "/hcivcls.HAService/Evaluate"
-	HAService_GetActiveTasks_FullMethodName = "/hcivcls.HAService/GetActiveTasks"
+	HCIVclsService_GetVersion_FullMethodName     = "/hcivcls.HCIVclsService/GetVersion"
+	HCIVclsService_GetStatus_FullMethodName      = "/hcivcls.HCIVclsService/GetStatus"
+	HCIVclsService_GetDegradation_FullMethodName = "/hcivcls.HCIVclsService/GetDegradation"
+	HCIVclsService_EvaluateHA_FullMethodName     = "/hcivcls.HCIVclsService/EvaluateHA"
+	HCIVclsService_ListTasks_FullMethodName      = "/hcivcls.HCIVclsService/ListTasks"
 )
 
-// HAServiceClient is the client API for HAService service.
+// HCIVclsServiceClient is the client API for HCIVclsService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type HAServiceClient interface {
-	Evaluate(ctx context.Context, in *EvaluateRequest, opts ...grpc.CallOption) (*EvaluateResponse, error)
-	GetActiveTasks(ctx context.Context, in *GetTasksRequest, opts ...grpc.CallOption) (*GetTasksResponse, error)
+type HCIVclsServiceClient interface {
+	GetVersion(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error)
+	GetStatus(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*StatusResponse, error)
+	GetDegradation(ctx context.Context, in *DegradationRequest, opts ...grpc.CallOption) (*DegradationResponse, error)
+	EvaluateHA(ctx context.Context, in *EvaluateHARequest, opts ...grpc.CallOption) (*EvaluateHAResponse, error)
+	ListTasks(ctx context.Context, in *ListTasksRequest, opts ...grpc.CallOption) (*ListTasksResponse, error)
 }
 
-type hAServiceClient struct {
+type hCIVclsServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewHAServiceClient(cc grpc.ClientConnInterface) HAServiceClient {
-	return &hAServiceClient{cc}
+func NewHCIVclsServiceClient(cc grpc.ClientConnInterface) HCIVclsServiceClient {
+	return &hCIVclsServiceClient{cc}
 }
 
-func (c *hAServiceClient) Evaluate(ctx context.Context, in *EvaluateRequest, opts ...grpc.CallOption) (*EvaluateResponse, error) {
-	out := new(EvaluateResponse)
-	err := c.cc.Invoke(ctx, HAService_Evaluate_FullMethodName, in, out, opts...)
+func (c *hCIVclsServiceClient) GetVersion(ctx context.Context, in *VersionRequest, opts ...grpc.CallOption) (*VersionResponse, error) {
+	out := new(VersionResponse)
+	err := c.cc.Invoke(ctx, HCIVclsService_GetVersion_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *hAServiceClient) GetActiveTasks(ctx context.Context, in *GetTasksRequest, opts ...grpc.CallOption) (*GetTasksResponse, error) {
-	out := new(GetTasksResponse)
-	err := c.cc.Invoke(ctx, HAService_GetActiveTasks_FullMethodName, in, out, opts...)
+func (c *hCIVclsServiceClient) GetStatus(ctx context.Context, in *StatusRequest, opts ...grpc.CallOption) (*StatusResponse, error) {
+	out := new(StatusResponse)
+	err := c.cc.Invoke(ctx, HCIVclsService_GetStatus_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// HAServiceServer is the server API for HAService service.
-// All implementations must embed UnimplementedHAServiceServer
+func (c *hCIVclsServiceClient) GetDegradation(ctx context.Context, in *DegradationRequest, opts ...grpc.CallOption) (*DegradationResponse, error) {
+	out := new(DegradationResponse)
+	err := c.cc.Invoke(ctx, HCIVclsService_GetDegradation_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hCIVclsServiceClient) EvaluateHA(ctx context.Context, in *EvaluateHARequest, opts ...grpc.CallOption) (*EvaluateHAResponse, error) {
+	out := new(EvaluateHAResponse)
+	err := c.cc.Invoke(ctx, HCIVclsService_EvaluateHA_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *hCIVclsServiceClient) ListTasks(ctx context.Context, in *ListTasksRequest, opts ...grpc.CallOption) (*ListTasksResponse, error) {
+	out := new(ListTasksResponse)
+	err := c.cc.Invoke(ctx, HCIVclsService_ListTasks_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// HCIVclsServiceServer is the server API for HCIVclsService service.
+// All implementations must embed UnimplementedHCIVclsServiceServer
 // for forward compatibility
-type HAServiceServer interface {
-	Evaluate(context.Context, *EvaluateRequest) (*EvaluateResponse, error)
-	GetActiveTasks(context.Context, *GetTasksRequest) (*GetTasksResponse, error)
-	mustEmbedUnimplementedHAServiceServer()
+type HCIVclsServiceServer interface {
+	GetVersion(context.Context, *VersionRequest) (*VersionResponse, error)
+	GetStatus(context.Context, *StatusRequest) (*StatusResponse, error)
+	GetDegradation(context.Context, *DegradationRequest) (*DegradationResponse, error)
+	EvaluateHA(context.Context, *EvaluateHARequest) (*EvaluateHAResponse, error)
+	ListTasks(context.Context, *ListTasksRequest) (*ListTasksResponse, error)
+	mustEmbedUnimplementedHCIVclsServiceServer()
 }
 
-// UnimplementedHAServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedHAServiceServer struct {
+// UnimplementedHCIVclsServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedHCIVclsServiceServer struct {
 }
 
-func (UnimplementedHAServiceServer) Evaluate(context.Context, *EvaluateRequest) (*EvaluateResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Evaluate not implemented")
+func (UnimplementedHCIVclsServiceServer) GetVersion(context.Context, *VersionRequest) (*VersionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
 }
-func (UnimplementedHAServiceServer) GetActiveTasks(context.Context, *GetTasksRequest) (*GetTasksResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetActiveTasks not implemented")
+func (UnimplementedHCIVclsServiceServer) GetStatus(context.Context, *StatusRequest) (*StatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStatus not implemented")
 }
-func (UnimplementedHAServiceServer) mustEmbedUnimplementedHAServiceServer() {}
-
-// UnsafeHAServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to HAServiceServer will
-// result in compilation errors.
-type UnsafeHAServiceServer interface {
-	mustEmbedUnimplementedHAServiceServer()
-}
-
-func RegisterHAServiceServer(s grpc.ServiceRegistrar, srv HAServiceServer) {
-	s.RegisterService(&HAService_ServiceDesc, srv)
-}
-
-func _HAService_Evaluate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EvaluateRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HAServiceServer).Evaluate(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HAService_Evaluate_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HAServiceServer).Evaluate(ctx, req.(*EvaluateRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HAService_GetActiveTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetTasksRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HAServiceServer).GetActiveTasks(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HAService_GetActiveTasks_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HAServiceServer).GetActiveTasks(ctx, req.(*GetTasksRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// HAService_ServiceDesc is the grpc.ServiceDesc for HAService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var HAService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "hcivcls.HAService",
-	HandlerType: (*HAServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Evaluate",
-			Handler:    _HAService_Evaluate_Handler,
-		},
-		{
-			MethodName: "GetActiveTasks",
-			Handler:    _HAService_GetActiveTasks_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/api/proto/hcivcls.proto",
-}
-
-const (
-	FDMService_GetClusterStatus_FullMethodName = "/hcivcls.FDMService/GetClusterStatus"
-	FDMService_GetDegradation_FullMethodName   = "/hcivcls.FDMService/GetDegradation"
-)
-
-// FDMServiceClient is the client API for FDMService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type FDMServiceClient interface {
-	GetClusterStatus(ctx context.Context, in *GetClusterStatusRequest, opts ...grpc.CallOption) (*GetClusterStatusResponse, error)
-	GetDegradation(ctx context.Context, in *GetDegradationRequest, opts ...grpc.CallOption) (*GetDegradationResponse, error)
-}
-
-type fDMServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewFDMServiceClient(cc grpc.ClientConnInterface) FDMServiceClient {
-	return &fDMServiceClient{cc}
-}
-
-func (c *fDMServiceClient) GetClusterStatus(ctx context.Context, in *GetClusterStatusRequest, opts ...grpc.CallOption) (*GetClusterStatusResponse, error) {
-	out := new(GetClusterStatusResponse)
-	err := c.cc.Invoke(ctx, FDMService_GetClusterStatus_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *fDMServiceClient) GetDegradation(ctx context.Context, in *GetDegradationRequest, opts ...grpc.CallOption) (*GetDegradationResponse, error) {
-	out := new(GetDegradationResponse)
-	err := c.cc.Invoke(ctx, FDMService_GetDegradation_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// FDMServiceServer is the server API for FDMService service.
-// All implementations must embed UnimplementedFDMServiceServer
-// for forward compatibility
-type FDMServiceServer interface {
-	GetClusterStatus(context.Context, *GetClusterStatusRequest) (*GetClusterStatusResponse, error)
-	GetDegradation(context.Context, *GetDegradationRequest) (*GetDegradationResponse, error)
-	mustEmbedUnimplementedFDMServiceServer()
-}
-
-// UnimplementedFDMServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedFDMServiceServer struct {
-}
-
-func (UnimplementedFDMServiceServer) GetClusterStatus(context.Context, *GetClusterStatusRequest) (*GetClusterStatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetClusterStatus not implemented")
-}
-func (UnimplementedFDMServiceServer) GetDegradation(context.Context, *GetDegradationRequest) (*GetDegradationResponse, error) {
+func (UnimplementedHCIVclsServiceServer) GetDegradation(context.Context, *DegradationRequest) (*DegradationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDegradation not implemented")
 }
-func (UnimplementedFDMServiceServer) mustEmbedUnimplementedFDMServiceServer() {}
+func (UnimplementedHCIVclsServiceServer) EvaluateHA(context.Context, *EvaluateHARequest) (*EvaluateHAResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EvaluateHA not implemented")
+}
+func (UnimplementedHCIVclsServiceServer) ListTasks(context.Context, *ListTasksRequest) (*ListTasksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListTasks not implemented")
+}
+func (UnimplementedHCIVclsServiceServer) mustEmbedUnimplementedHCIVclsServiceServer() {}
 
-// UnsafeFDMServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to FDMServiceServer will
+// UnsafeHCIVclsServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to HCIVclsServiceServer will
 // result in compilation errors.
-type UnsafeFDMServiceServer interface {
-	mustEmbedUnimplementedFDMServiceServer()
+type UnsafeHCIVclsServiceServer interface {
+	mustEmbedUnimplementedHCIVclsServiceServer()
 }
 
-func RegisterFDMServiceServer(s grpc.ServiceRegistrar, srv FDMServiceServer) {
-	s.RegisterService(&FDMService_ServiceDesc, srv)
+func RegisterHCIVclsServiceServer(s grpc.ServiceRegistrar, srv HCIVclsServiceServer) {
+	s.RegisterService(&HCIVclsService_ServiceDesc, srv)
 }
 
-func _FDMService_GetClusterStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetClusterStatusRequest)
+func _HCIVclsService_GetVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VersionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FDMServiceServer).GetClusterStatus(ctx, in)
+		return srv.(HCIVclsServiceServer).GetVersion(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FDMService_GetClusterStatus_FullMethodName,
+		FullMethod: HCIVclsService_GetVersion_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FDMServiceServer).GetClusterStatus(ctx, req.(*GetClusterStatusRequest))
+		return srv.(HCIVclsServiceServer).GetVersion(ctx, req.(*VersionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FDMService_GetDegradation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetDegradationRequest)
+func _HCIVclsService_GetStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StatusRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FDMServiceServer).GetDegradation(ctx, in)
+		return srv.(HCIVclsServiceServer).GetStatus(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FDMService_GetDegradation_FullMethodName,
+		FullMethod: HCIVclsService_GetStatus_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FDMServiceServer).GetDegradation(ctx, req.(*GetDegradationRequest))
+		return srv.(HCIVclsServiceServer).GetStatus(ctx, req.(*StatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// FDMService_ServiceDesc is the grpc.ServiceDesc for FDMService service.
+func _HCIVclsService_GetDegradation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DegradationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HCIVclsServiceServer).GetDegradation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HCIVclsService_GetDegradation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HCIVclsServiceServer).GetDegradation(ctx, req.(*DegradationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HCIVclsService_EvaluateHA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EvaluateHARequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HCIVclsServiceServer).EvaluateHA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HCIVclsService_EvaluateHA_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HCIVclsServiceServer).EvaluateHA(ctx, req.(*EvaluateHARequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HCIVclsService_ListTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTasksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HCIVclsServiceServer).ListTasks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HCIVclsService_ListTasks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HCIVclsServiceServer).ListTasks(ctx, req.(*ListTasksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// HCIVclsService_ServiceDesc is the grpc.ServiceDesc for HCIVclsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var FDMService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "hcivcls.FDMService",
-	HandlerType: (*FDMServiceServer)(nil),
+var HCIVclsService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "hcivcls.HCIVclsService",
+	HandlerType: (*HCIVclsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetClusterStatus",
-			Handler:    _FDMService_GetClusterStatus_Handler,
+			MethodName: "GetVersion",
+			Handler:    _HCIVclsService_GetVersion_Handler,
+		},
+		{
+			MethodName: "GetStatus",
+			Handler:    _HCIVclsService_GetStatus_Handler,
 		},
 		{
 			MethodName: "GetDegradation",
-			Handler:    _FDMService_GetDegradation_Handler,
+			Handler:    _HCIVclsService_GetDegradation_Handler,
 		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/api/proto/hcivcls.proto",
-}
-
-const (
-	StatusService_GetFullStatus_FullMethodName = "/hcivcls.StatusService/GetFullStatus"
-)
-
-// StatusServiceClient is the client API for StatusService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type StatusServiceClient interface {
-	GetFullStatus(ctx context.Context, in *GetFullStatusRequest, opts ...grpc.CallOption) (*GetFullStatusResponse, error)
-}
-
-type statusServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewStatusServiceClient(cc grpc.ClientConnInterface) StatusServiceClient {
-	return &statusServiceClient{cc}
-}
-
-func (c *statusServiceClient) GetFullStatus(ctx context.Context, in *GetFullStatusRequest, opts ...grpc.CallOption) (*GetFullStatusResponse, error) {
-	out := new(GetFullStatusResponse)
-	err := c.cc.Invoke(ctx, StatusService_GetFullStatus_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// StatusServiceServer is the server API for StatusService service.
-// All implementations must embed UnimplementedStatusServiceServer
-// for forward compatibility
-type StatusServiceServer interface {
-	GetFullStatus(context.Context, *GetFullStatusRequest) (*GetFullStatusResponse, error)
-	mustEmbedUnimplementedStatusServiceServer()
-}
-
-// UnimplementedStatusServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedStatusServiceServer struct {
-}
-
-func (UnimplementedStatusServiceServer) GetFullStatus(context.Context, *GetFullStatusRequest) (*GetFullStatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetFullStatus not implemented")
-}
-func (UnimplementedStatusServiceServer) mustEmbedUnimplementedStatusServiceServer() {}
-
-// UnsafeStatusServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to StatusServiceServer will
-// result in compilation errors.
-type UnsafeStatusServiceServer interface {
-	mustEmbedUnimplementedStatusServiceServer()
-}
-
-func RegisterStatusServiceServer(s grpc.ServiceRegistrar, srv StatusServiceServer) {
-	s.RegisterService(&StatusService_ServiceDesc, srv)
-}
-
-func _StatusService_GetFullStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetFullStatusRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(StatusServiceServer).GetFullStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: StatusService_GetFullStatus_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StatusServiceServer).GetFullStatus(ctx, req.(*GetFullStatusRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// StatusService_ServiceDesc is the grpc.ServiceDesc for StatusService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var StatusService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "hcivcls.StatusService",
-	HandlerType: (*StatusServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetFullStatus",
-			Handler:    _StatusService_GetFullStatus_Handler,
+			MethodName: "EvaluateHA",
+			Handler:    _HCIVclsService_EvaluateHA_Handler,
+		},
+		{
+			MethodName: "ListTasks",
+			Handler:    _HCIVclsService_ListTasks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

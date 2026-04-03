@@ -3,87 +3,64 @@ package grpc
 import (
 	"context"
 
+	"github.com/turtacn/hci-vcls/internal/app"
 	"github.com/turtacn/hci-vcls/pkg/api/proto"
-	"github.com/turtacn/hci-vcls/pkg/fdm"
-	"github.com/turtacn/hci-vcls/pkg/ha"
-	"github.com/turtacn/hci-vcls/pkg/vcls"
 )
 
 type Server struct {
-	proto.UnimplementedHAServiceServer
-	proto.UnimplementedFDMServiceServer
-	proto.UnimplementedStatusServiceServer
+	proto.UnimplementedHCIVclsServiceServer
 
-	haEngine ha.HAEngine
-	fdmAgent fdm.Agent
-	vclsAgent vcls.Agent
+	svc *app.Service
 }
 
-func NewServer(haEngine ha.HAEngine, fdmAgent fdm.Agent, vclsAgent vcls.Agent) *Server {
+func NewServer(svc *app.Service) *Server {
 	return &Server{
-		haEngine:  haEngine,
-		fdmAgent:  fdmAgent,
-		vclsAgent: vclsAgent,
+		svc: svc,
 	}
 }
 
-func (s *Server) Evaluate(ctx context.Context, req *proto.EvaluateRequest) (*proto.EvaluateResponse, error) {
-	decision, err := s.haEngine.Evaluate(req.Vmid)
+func (s *Server) GetVersion(ctx context.Context, req *proto.VersionRequest) (*proto.VersionResponse, error) {
+	return &proto.VersionResponse{
+		Version: "1.0.0",
+		Commit:  "unknown",
+		Date:    "unknown",
+	}, nil
+}
+
+func (s *Server) GetStatus(ctx context.Context, req *proto.StatusRequest) (*proto.StatusResponse, error) {
+	status := s.svc.Status()
+	return &proto.StatusResponse{
+		IsLeader:         status.IsLeader,
+		LeaderId:         status.Leader,
+		ClusterState:     status.ClusterState,
+		DegradationLevel: status.DegradationLevel,
+	}, nil
+}
+
+func (s *Server) GetDegradation(ctx context.Context, req *proto.DegradationRequest) (*proto.DegradationResponse, error) {
+	status := s.svc.Status()
+	return &proto.DegradationResponse{
+		Level: status.DegradationLevel,
+	}, nil
+}
+
+func (s *Server) EvaluateHA(ctx context.Context, req *proto.EvaluateHARequest) (*proto.EvaluateHAResponse, error) {
+	plan, err := s.svc.EvaluateHA(ctx, req.ClusterId)
 	if err != nil {
 		return nil, err
 	}
-	return &proto.EvaluateResponse{
-		Vmid:       decision.VMID,
-		Action:     string(decision.Action),
-		TargetNode: decision.TargetNode,
-		Reason:     decision.Reason,
+	if plan == nil {
+		return &proto.EvaluateHAResponse{PlanId: ""}, nil
+	}
+	return &proto.EvaluateHAResponse{
+		PlanId: plan.ID,
 	}, nil
 }
 
-func (s *Server) GetActiveTasks(ctx context.Context, req *proto.GetTasksRequest) (*proto.GetTasksResponse, error) {
-	tasks := s.haEngine.ActiveTasks()
-	resp := &proto.GetTasksResponse{}
-	for _, t := range tasks {
-		resp.Tasks = append(resp.Tasks, &proto.TaskInfo{
-			Vmid:   t.VMID,
-			Status: string(t.Status),
-		})
-	}
-	return resp, nil
-}
-
-func (s *Server) GetClusterStatus(ctx context.Context, req *proto.GetClusterStatusRequest) (*proto.GetClusterStatusResponse, error) {
-	cv := s.fdmAgent.ClusterView()
-	resp := &proto.GetClusterStatusResponse{
-		LeaderId:   cv.LeaderID,
-		NodeStates: make(map[string]string),
-	}
-	for id, state := range cv.Nodes {
-		resp.NodeStates[id] = string(state)
-	}
-	return resp, nil
-}
-
-func (s *Server) GetDegradation(ctx context.Context, req *proto.GetDegradationRequest) (*proto.GetDegradationResponse, error) {
-	return &proto.GetDegradationResponse{
-		Level: int32(fdm.LevelWeight(s.fdmAgent.LocalDegradationLevel())),
+func (s *Server) ListTasks(ctx context.Context, req *proto.ListTasksRequest) (*proto.ListTasksResponse, error) {
+	return &proto.ListTasksResponse{
+		Tasks: make([]*proto.ListTasksResponse_TaskInfo, 0),
 	}, nil
 }
 
-func (s *Server) GetFullStatus(ctx context.Context, req *proto.GetFullStatusRequest) (*proto.GetFullStatusResponse, error) {
-	level := s.fdmAgent.LocalDegradationLevel()
-	caps := s.vclsAgent.ActiveCapabilities()
-
-	capStrings := make([]string, 0, len(caps))
-	for _, c := range caps {
-		capStrings = append(capStrings, string(c))
-	}
-
-	return &proto.GetFullStatusResponse{
-		LeaderId:           s.fdmAgent.LeaderNodeID(),
-		DegradationLevel:   int32(fdm.LevelWeight(level)),
-		ActiveCapabilities: capStrings,
-	}, nil
-}
-
-//Personal.AI order the ending
+// Personal.AI order the ending

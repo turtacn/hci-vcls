@@ -36,6 +36,13 @@ func TestFDMCmd(t *testing.T) {
 	if buf.String() == "" {
 		t.Errorf("Expected output from degradation command")
 	}
+
+	buf.Reset()
+	cmd.SetArgs([]string{"evaluate"})
+	err = cmd.Execute()
+	if err == nil {
+		t.Errorf("Expected evaluate to fail without cluster-id")
+	}
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

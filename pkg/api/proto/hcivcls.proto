@@ -4,61 +4,56 @@ package hcivcls;
 
 option go_package = "github.com/turtacn/hci-vcls/pkg/api/proto";
 
-service HAService {
-  rpc Evaluate(EvaluateRequest) returns (EvaluateResponse);
-  rpc GetActiveTasks(GetTasksRequest) returns (GetTasksResponse);
+service HCIVclsService {
+    rpc GetVersion(VersionRequest) returns (VersionResponse);
+    rpc GetStatus(StatusRequest) returns (StatusResponse);
+    rpc GetDegradation(DegradationRequest) returns (DegradationResponse);
+    rpc EvaluateHA(EvaluateHARequest) returns (EvaluateHAResponse);
+    rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
 }
 
-service FDMService {
-  rpc GetClusterStatus(GetClusterStatusRequest) returns (GetClusterStatusResponse);
-  rpc GetDegradation(GetDegradationRequest) returns (GetDegradationResponse);
+message VersionRequest {}
+
+message VersionResponse {
+    string version = 1;
+    string commit = 2;
+    string date = 3;
 }
 
-service StatusService {
-  rpc GetFullStatus(GetFullStatusRequest) returns (GetFullStatusResponse);
+message StatusRequest {}
+
+message StatusResponse {
+    bool is_leader = 1;
+    string leader_id = 2;
+    string cluster_state = 3;
+    string degradation_level = 4;
 }
 
-message EvaluateRequest {
-  string vmid = 1;
+message DegradationRequest {}
+
+message DegradationResponse {
+    string level = 1;
 }
 
-message EvaluateResponse {
-  string vmid = 1;
-  string action = 2;
-  string target_node = 3;
-  string reason = 4;
+message EvaluateHARequest {
+    string cluster_id = 1;
 }
 
-message GetTasksRequest {}
-
-message GetTasksResponse {
-  repeated TaskInfo tasks = 1;
+message EvaluateHAResponse {
+    string plan_id = 1;
 }
 
-message TaskInfo {
-  string vmid = 1;
-  string status = 2;
+message ListTasksRequest {
+    string cluster_id = 1;
 }
 
-message GetClusterStatusRequest {}
-
-message GetClusterStatusResponse {
-  string leader_id = 1;
-  map<string, string> node_states = 2;
+message ListTasksResponse {
+    message TaskInfo {
+        string id = 1;
+        string vmid = 2;
+        string status = 3;
+    }
+    repeated TaskInfo tasks = 1;
 }
 
-message GetDegradationRequest {}
-
-message GetDegradationResponse {
-  int32 level = 1;
-}
-
-message GetFullStatusRequest {}
-
-message GetFullStatusResponse {
-  string leader_id = 1;
-  int32 degradation_level = 2;
-  repeated string active_capabilities = 3;
-}
-
-//Personal.AI order the ending
+// Personal.AI order the ending
