@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap"
 	"github.com/turtacn/hci-vcls/internal/config"
 	"github.com/turtacn/hci-vcls/internal/election"
 	"github.com/turtacn/hci-vcls/pkg/fdm"
@@ -13,6 +12,7 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/mysql"
 	"github.com/turtacn/hci-vcls/pkg/statemachine"
 	"github.com/turtacn/hci-vcls/pkg/vcls"
+	"go.uber.org/zap"
 )
 
 type mockElector struct {
@@ -23,17 +23,17 @@ func (m *mockElector) IsLeader() bool { return m.leader }
 func (m *mockElector) Status() election.LeaderStatus {
 	return election.LeaderStatus{LeaderID: "node1"}
 }
-func (m *mockElector) Campaign(ctx context.Context) error                   { return nil }
-func (m *mockElector) Resign(ctx context.Context) error                     { return nil }
-func (m *mockElector) Watch() <-chan election.LeaderStatus                  { return nil }
-func (m *mockElector) Close() error                                         { return nil }
+func (m *mockElector) Campaign(ctx context.Context) error                     { return nil }
+func (m *mockElector) Resign(ctx context.Context) error                       { return nil }
+func (m *mockElector) Watch() <-chan election.LeaderStatus                    { return nil }
+func (m *mockElector) Close() error                                           { return nil }
 func (m *mockElector) OnLeaderChange(callback func(info election.LeaderInfo)) {}
 
 type mockVCLS struct {
 	eligible []*vcls.VM
 }
 
-func (m *mockVCLS) Refresh(ctx context.Context, clusterID string) error { return nil }
+func (m *mockVCLS) Refresh(ctx context.Context, clusterID string) error      { return nil }
 func (m *mockVCLS) GetVM(ctx context.Context, vmID string) (*vcls.VM, error) { return nil, nil }
 func (m *mockVCLS) ListProtected(ctx context.Context, clusterID string) ([]*vcls.VM, error) {
 	return nil, nil
@@ -64,15 +64,15 @@ type mockFDMAgent struct {
 	level fdm.DegradationLevel
 }
 
-func (m *mockFDMAgent) Start(ctx context.Context) error                         { return nil }
-func (m *mockFDMAgent) Stop() error                                             { return nil }
-func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel             { return m.level }
-func (m *mockFDMAgent) OnDegradationChanged(func(fdm.DegradationLevel))         {}
-func (m *mockFDMAgent) OnNodeFailure(func(string))                              {}
-func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState                    { return nil }
-func (m *mockFDMAgent) IsLeader() bool                                          { return true }
-func (m *mockFDMAgent) LeaderNodeID() string                                    { return "node1" }
-func (m *mockFDMAgent) ClusterView() fdm.ClusterView                            { return fdm.ClusterView{} }
+func (m *mockFDMAgent) Start(ctx context.Context) error                 { return nil }
+func (m *mockFDMAgent) Stop() error                                     { return nil }
+func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel     { return m.level }
+func (m *mockFDMAgent) OnDegradationChanged(func(fdm.DegradationLevel)) {}
+func (m *mockFDMAgent) OnNodeFailure(func(string))                      {}
+func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState            { return nil }
+func (m *mockFDMAgent) IsLeader() bool                                  { return true }
+func (m *mockFDMAgent) LeaderNodeID() string                            { return "node1" }
+func (m *mockFDMAgent) ClusterView() fdm.ClusterView                    { return fdm.ClusterView{} }
 
 func TestEvaluateHA_NotLeader(t *testing.T) {
 	elector := &mockElector{leader: false}
@@ -127,9 +127,9 @@ func TestEvaluateHA_NormalPath(t *testing.T) {
 
 	executor := &mockExecutor{}
 	sm := statemachine.NewMachine()
-	_ = sm.Transition(statemachine.EventHeartbeatRestored)     // to Stable
-	_ = sm.Transition(statemachine.EventHeartbeatLost)         // to Degraded
-	_ = sm.Transition(statemachine.EventEvaluationStarted)     // to Evaluating
+	_ = sm.Transition(statemachine.EventHeartbeatRestored) // to Stable
+	_ = sm.Transition(statemachine.EventHeartbeatLost)     // to Degraded
+	_ = sm.Transition(statemachine.EventEvaluationStarted) // to Evaluating
 
 	planRepo := mysql.NewMemoryPlanRepository()
 

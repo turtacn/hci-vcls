@@ -19,4 +19,4 @@ type Daemon interface {
 	OnAnyNodeFailure(callback func(nodeID string, agentID string))
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

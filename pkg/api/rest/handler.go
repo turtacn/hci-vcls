@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"github.com/turtacn/hci-vcls/internal/app"
+	"go.uber.org/zap"
 )
 
 type Handler struct {
@@ -112,4 +112,4 @@ func (h *Handler) handleError(c *gin.Context, err error) {
 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "code": "INTERNAL_ERROR"})
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

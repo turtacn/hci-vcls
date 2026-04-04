@@ -17,7 +17,7 @@ var rootCmd = &cobra.Command{
 	Short: "HCI vCLS Service",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("HCI vCLS Service")
-		fmt.Printf("Version: %s, Commit: %s, Date: %s\n", BuildVersion, BuildCommit, BuildDate)
+		fmt.Printf("Version: %s, Commit: %s, Date: %s\n", Version, Commit, Date)
 		return nil
 	},
 }

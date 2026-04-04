@@ -27,4 +27,4 @@ var (
 	ErrSemaphoreTimeout = &QMError{Code: "ERR_SEMAPHORE_TIMEOUT", Message: "semaphore timeout"}
 )
 
-//Personal.AI order the ending
+// Personal.AI order the ending

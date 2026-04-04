@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 type SlogLogger struct {
@@ -25,10 +27,6 @@ func NewLogger(level string, format string) Logger {
 	return &SlogLogger{
 		l: slog.New(handler),
 	}
-}
-
-func Default() Logger {
-	return NewLogger(LevelInfo, "text")
 }
 
 func (l *SlogLogger) Debug(msg string, args ...any) {
@@ -59,6 +57,10 @@ func (l *SlogLogger) WithError(err error) Logger {
 	}
 }
 
+func (l *SlogLogger) Underlying() *zap.Logger {
+	return nil
+}
+
 func parseLevel(level string) slog.Level {
 	switch strings.ToLower(level) {
 	case LevelDebug:
@@ -72,4 +74,4 @@ func parseLevel(level string) slog.Level {
 	}
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

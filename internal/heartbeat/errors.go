@@ -25,4 +25,4 @@ var (
 	ErrHeartbeatTimeout = &HeartbeatError{Code: "ERR_HEARTBEAT_TIMEOUT", Message: "heartbeat timeout"}
 )
 
-//Personal.AI order the ending
+// Personal.AI order the ending

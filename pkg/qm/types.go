@@ -26,10 +26,10 @@ type QMConfig struct {
 type TaskStatus string
 
 const (
-	TaskPending   TaskStatus = "Pending"
-	TaskRunning   TaskStatus = "Running"
-	TaskDone      TaskStatus = "Done"
-	TaskFailed    TaskStatus = "Failed"
+	TaskPending TaskStatus = "Pending"
+	TaskRunning TaskStatus = "Running"
+	TaskDone    TaskStatus = "Done"
+	TaskFailed  TaskStatus = "Failed"
 )
 
 type Task struct {
@@ -43,4 +43,4 @@ type Task struct {
 	UpdatedAt  time.Time
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

@@ -39,16 +39,16 @@ type mockFDMAgent struct {
 	level fdm.DegradationLevel
 	cv    fdm.ClusterView
 }
-func (m *mockFDMAgent) Start(ctx context.Context) error                         { return nil }
-func (m *mockFDMAgent) Stop() error                                             { return nil }
-func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel             { return m.level }
-func (m *mockFDMAgent) OnDegradationChanged(func(fdm.DegradationLevel))         {}
-func (m *mockFDMAgent) OnNodeFailure(func(string))                              {}
-func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState                    { return m.cv.Nodes }
-func (m *mockFDMAgent) IsLeader() bool                                          { return true }
-func (m *mockFDMAgent) LeaderNodeID() string                                    { return "" }
-func (m *mockFDMAgent) ClusterView() fdm.ClusterView                            { return m.cv }
 
+func (m *mockFDMAgent) Start(ctx context.Context) error                 { return nil }
+func (m *mockFDMAgent) Stop() error                                     { return nil }
+func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel     { return m.level }
+func (m *mockFDMAgent) OnDegradationChanged(func(fdm.DegradationLevel)) {}
+func (m *mockFDMAgent) OnNodeFailure(func(string))                      {}
+func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState            { return m.cv.Nodes }
+func (m *mockFDMAgent) IsLeader() bool                                  { return true }
+func (m *mockFDMAgent) LeaderNodeID() string                            { return "" }
+func (m *mockFDMAgent) ClusterView() fdm.ClusterView                    { return m.cv }
 
 func setupFullApp(cfg *config.Config) (*app.Service, *rest.Handler, *helpers.TestApp, *mockFDMAgent) {
 	m := metrics.NewNoopMetrics()
@@ -227,7 +227,9 @@ func TestE2E_Loop3_HADecisionAndExecution(t *testing.T) {
 	candidates := []ha.HostCandidate{
 		{HostID: "host-good", Healthy: true, CurrentLoad: 0, WitnessCapable: true},
 	}
-	ctx := context.WithValue(context.Background(), "mock_candidates", candidates)
+
+	type contextKey string
+	ctx := context.WithValue(context.Background(), contextKey("mock_candidates"), candidates)
 
 	// Setup FailedHosts context wrapper for the mocked planner input.
 	// Since EvaluateHA uses `buildPlanRequest` which doesn't know our test's failed hosts,
@@ -243,14 +245,14 @@ func TestE2E_Loop3_HADecisionAndExecution(t *testing.T) {
 	// Let's check planner.go: `failedHostSet[vm.CurrentHost]`. It needs `req.FailedHosts`.
 	// For this test, I can just mock the planner's input explicitly.
 	req := ha.PlanRequest{
-		ClusterID: cfg.Node.ClusterID,
+		ClusterID:   cfg.Node.ClusterID,
 		FailedHosts: []string{"host-fail"},
 		ProtectedVMs: []*vcls.VM{
 			{ID: "vm-test-1", ClusterID: cfg.Node.ClusterID, CurrentHost: "host-fail", EligibleForHA: true, PowerState: vcls.PowerRunning, Protected: true, HostHealthy: false},
 		},
 		HostCandidates: candidates,
-		PreferWitness: true,
-		BatchSize: 5,
+		PreferWitness:  true,
+		BatchSize:      5,
 	}
 	plan, err := testApp.Service.Planner().BuildPlan(ctx, req)
 	if err != nil {
@@ -280,7 +282,7 @@ func TestE2E_Loop3_HADecisionAndExecution(t *testing.T) {
 	_ = testApp.TaskRepo.Create(ctx, dbTask)
 
 	// Now manually execute it via the service's executor since the REST API doesn't allow injecting mock candidates easily
-	err = testApp.Service.Executor().Execute(ctx, plan)
+	_ = testApp.Service.Executor().Execute(ctx, plan)
 
 	// Verify task in repo became completed (mock qm executor marks it Done)
 	tasks, _ := testApp.TaskRepo.ListByPlan(context.Background(), plan.ID)

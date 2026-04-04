@@ -1,0 +1,8 @@
+linters:
+  disable-all: true
+  enable:
+    - goimports
+    - govet
+    - staticcheck
+    - unused
+# Personal.AI order the ending

@@ -8,25 +8,25 @@ import (
 )
 
 type heartbeaterImpl struct {
-	config      HeartbeatConfig
-	peerStates  map[string]HeartbeatState
-	deadCbs     []func(string)
+	config       HeartbeatConfig
+	peerStates   map[string]HeartbeatState
+	deadCbs      []func(string)
 	recoveredCbs []func(string)
-	witnessPool witness.Pool
-	ctx         context.Context
-	cancel      context.CancelFunc
+	witnessPool  witness.Pool
+	ctx          context.Context
+	cancel       context.CancelFunc
 }
 
 func NewHeartbeater(config HeartbeatConfig, pool witness.Pool) Heartbeater {
 	ctx, cancel := context.WithCancel(context.Background())
 	hb := &heartbeaterImpl{
-		config:      config,
-		peerStates:  make(map[string]HeartbeatState),
-		deadCbs:     make([]func(string), 0),
+		config:       config,
+		peerStates:   make(map[string]HeartbeatState),
+		deadCbs:      make([]func(string), 0),
 		recoveredCbs: make([]func(string), 0),
-		witnessPool: pool,
-		ctx:         ctx,
-		cancel:      cancel,
+		witnessPool:  pool,
+		ctx:          ctx,
+		cancel:       cancel,
 	}
 
 	for _, peer := range config.Peers {
@@ -102,4 +102,4 @@ func (h *heartbeaterImpl) notifyDead(nodeID string) {
 // 	}
 // }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

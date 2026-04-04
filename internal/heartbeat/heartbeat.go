@@ -11,4 +11,4 @@ type Heartbeater interface {
 	OnPeerRecovered(callback func(nodeID string))
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

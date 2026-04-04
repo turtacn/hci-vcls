@@ -20,10 +20,10 @@ func (e *TransitionError) Unwrap() error {
 }
 
 var (
-	ErrMachineNotStarted  = &TransitionError{Code: "ERR_MACHINE_NOT_STARTED", Message: "state machine not started"}
-	ErrInvalidTransition  = &TransitionError{Code: "ERR_INVALID_TRANSITION", Message: "invalid state transition"}
-	ErrEvaluationTimeout  = &TransitionError{Code: "ERR_EVALUATION_TIMEOUT", Message: "evaluation timeout"}
-	ErrCooldownActive     = &TransitionError{Code: "ERR_COOLDOWN_ACTIVE", Message: "transition cooldown active"}
+	ErrMachineNotStarted = &TransitionError{Code: "ERR_MACHINE_NOT_STARTED", Message: "state machine not started"}
+	ErrInvalidTransition = &TransitionError{Code: "ERR_INVALID_TRANSITION", Message: "invalid state transition"}
+	ErrEvaluationTimeout = &TransitionError{Code: "ERR_EVALUATION_TIMEOUT", Message: "evaluation timeout"}
+	ErrCooldownActive    = &TransitionError{Code: "ERR_COOLDOWN_ACTIVE", Message: "transition cooldown active"}
 )
 
-//Personal.AI order the ending
+// Personal.AI order the ending

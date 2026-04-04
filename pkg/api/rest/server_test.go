@@ -23,15 +23,15 @@ import (
 
 type mockAgent struct{}
 
-func (m *mockAgent) Start(ctx context.Context) error                         { return nil }
-func (m *mockAgent) Stop() error                                             { return nil }
-func (m *mockAgent) LocalDegradationLevel() fdm.DegradationLevel             { return fdm.DegradationNone }
-func (m *mockAgent) OnDegradationChanged(func(fdm.DegradationLevel))         {}
-func (m *mockAgent) OnNodeFailure(func(string))                              {}
-func (m *mockAgent) NodeStates() map[string]fdm.NodeState                    { return nil }
-func (m *mockAgent) IsLeader() bool                                          { return true }
-func (m *mockAgent) LeaderNodeID() string                                    { return "" }
-func (m *mockAgent) ClusterView() fdm.ClusterView                            { return fdm.ClusterView{} }
+func (m *mockAgent) Start(ctx context.Context) error                 { return nil }
+func (m *mockAgent) Stop() error                                     { return nil }
+func (m *mockAgent) LocalDegradationLevel() fdm.DegradationLevel     { return fdm.DegradationNone }
+func (m *mockAgent) OnDegradationChanged(func(fdm.DegradationLevel)) {}
+func (m *mockAgent) OnNodeFailure(func(string))                      {}
+func (m *mockAgent) NodeStates() map[string]fdm.NodeState            { return nil }
+func (m *mockAgent) IsLeader() bool                                  { return true }
+func (m *mockAgent) LeaderNodeID() string                            { return "" }
+func (m *mockAgent) ClusterView() fdm.ClusterView                    { return fdm.ClusterView{} }
 
 func setupTestRouter() (*gin.Engine, *app.Service) {
 	gin.SetMode(gin.TestMode)

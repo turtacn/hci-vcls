@@ -4,17 +4,20 @@ import (
 	"context"
 	"testing"
 
+	"go.uber.org/zap"
+
 	"github.com/turtacn/hci-vcls/internal/logger"
 )
 
 type mockLogger struct{}
 
-func (m mockLogger) Debug(msg string, args ...any)                 {}
-func (m mockLogger) Info(msg string, args ...any)                  {}
-func (m mockLogger) Warn(msg string, args ...any)                  {}
-func (m mockLogger) Error(msg string, args ...any)                 {}
+func (m mockLogger) Debug(msg string, args ...any)          {}
+func (m mockLogger) Info(msg string, args ...any)           {}
+func (m mockLogger) Warn(msg string, args ...any)           {}
+func (m mockLogger) Error(msg string, args ...any)          {}
 func (m mockLogger) WithFields(fields ...any) logger.Logger { return m }
 func (m mockLogger) WithError(err error) logger.Logger      { return m }
+func (m mockLogger) Underlying() *zap.Logger                { return nil }
 
 func TestPool_ConfirmFailure(t *testing.T) {
 	ctx := context.Background()
@@ -115,4 +118,4 @@ func TestAdapter_ConfirmFailure(t *testing.T) {
 	}
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

@@ -29,9 +29,15 @@ import (
 
 type dummyProber struct{}
 
-func (d *dummyProber) ProbeL0(ctx context.Context) fdm.ProbeResult { return fdm.ProbeResult{Success: true} }
-func (d *dummyProber) ProbeL1(ctx context.Context) fdm.ProbeResult { return fdm.ProbeResult{Success: true} }
-func (d *dummyProber) ProbeL2(ctx context.Context) fdm.ProbeResult { return fdm.ProbeResult{Success: true} }
+func (d *dummyProber) ProbeL0(ctx context.Context) fdm.ProbeResult {
+	return fdm.ProbeResult{Success: true}
+}
+func (d *dummyProber) ProbeL1(ctx context.Context) fdm.ProbeResult {
+	return fdm.ProbeResult{Success: true}
+}
+func (d *dummyProber) ProbeL2(ctx context.Context) fdm.ProbeResult {
+	return fdm.ProbeResult{Success: true}
+}
 func (d *dummyProber) ProbeAll(ctx context.Context) map[fdm.HeartbeatLevel]fdm.ProbeResult {
 	return map[fdm.HeartbeatLevel]fdm.ProbeResult{
 		fdm.HeartbeatL0: {Success: true},
@@ -122,4 +128,5 @@ func runServe(cfg *config.Config) error {
 	hbService.Stop()
 	return nil
 }
+
 // Personal.AI order the ending

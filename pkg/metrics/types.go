@@ -21,4 +21,4 @@ const (
 	MetricLeaderChanges    = "leader_changes_total"
 )
 
-//Personal.AI order the ending
+// Personal.AI order the ending

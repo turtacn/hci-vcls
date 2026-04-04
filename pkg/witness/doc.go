@@ -6,4 +6,4 @@
 // operations do not erroneously restart a VM that is still active.
 package witness
 
-//Personal.AI order the ending
+// Personal.AI order the ending

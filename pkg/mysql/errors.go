@@ -27,4 +27,4 @@ var (
 	ErrConnectionPool    = &MySQLError{Code: "ERR_CONNECTION_POOL", Message: "mysql connection pool error"}
 )
 
-//Personal.AI order the ending
+// Personal.AI order the ending

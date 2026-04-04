@@ -25,4 +25,4 @@ var (
 	ErrInvalidCapabilityMatrix = &CapabilityError{Code: "ERR_INVALID_CAPABILITY_MATRIX", Message: "invalid capability matrix"}
 )
 
-//Personal.AI order the ending
+// Personal.AI order the ending

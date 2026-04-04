@@ -14,4 +14,4 @@ type Pool interface {
 	Statuses(ctx context.Context) map[string]WitnessStatus
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

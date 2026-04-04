@@ -25,4 +25,4 @@ var (
 	ErrInvalidElectionPath = &ElectionError{Code: "ERR_INVALID_ELECTION_PATH", Message: "invalid election path"}
 )
 
-//Personal.AI order the ending
+// Personal.AI order the ending

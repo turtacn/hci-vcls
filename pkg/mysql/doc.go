@@ -6,4 +6,4 @@
 // the state of VM configurations as they pertain to HA.
 package mysql
 
-//Personal.AI order the ending
+// Personal.AI order the ending

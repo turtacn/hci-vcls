@@ -15,4 +15,4 @@ type Prober interface {
 	ProbeAll(ctx context.Context) map[HeartbeatLevel]ProbeResult
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

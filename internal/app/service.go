@@ -3,7 +3,6 @@ package app
 import (
 	"errors"
 
-	"go.uber.org/zap"
 	"github.com/turtacn/hci-vcls/internal/config"
 	"github.com/turtacn/hci-vcls/internal/election"
 	"github.com/turtacn/hci-vcls/internal/heartbeat"
@@ -13,11 +12,12 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/mysql"
 	"github.com/turtacn/hci-vcls/pkg/statemachine"
 	"github.com/turtacn/hci-vcls/pkg/vcls"
+	"go.uber.org/zap"
 )
 
 var (
-	ErrNotLeader       = errors.New("not leader")
-	ErrBelowThreshold  = errors.New("degradation below threshold")
+	ErrNotLeader      = errors.New("not leader")
+	ErrBelowThreshold = errors.New("degradation below threshold")
 )
 
 type Service struct {

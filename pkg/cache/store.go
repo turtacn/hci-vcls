@@ -7,4 +7,4 @@ type Store interface {
 	List() ([]VMComputeMeta, error)
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

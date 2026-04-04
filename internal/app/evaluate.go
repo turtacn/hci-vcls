@@ -3,13 +3,13 @@ package app
 import (
 	"context"
 
-	"go.uber.org/zap"
 	"github.com/turtacn/hci-vcls/internal/config"
 	"github.com/turtacn/hci-vcls/pkg/fdm"
 	"github.com/turtacn/hci-vcls/pkg/ha"
 	"github.com/turtacn/hci-vcls/pkg/mysql"
 	"github.com/turtacn/hci-vcls/pkg/statemachine"
 	"github.com/turtacn/hci-vcls/pkg/vcls"
+	"go.uber.org/zap"
 )
 
 func (s *Service) fdmState(clusterID string) fdm.DegradationLevel {
@@ -26,10 +26,10 @@ func shouldTriggerHA(state fdm.DegradationLevel) bool {
 
 func buildPlanRequest(clusterID string, state fdm.DegradationLevel, eligibleVMs []*vcls.VM, cfg config.HAConfig) ha.PlanRequest {
 	req := ha.PlanRequest{
-		ClusterID:      clusterID,
-		ProtectedVMs:   eligibleVMs,
-		PreferWitness  : true, // simplified
-		BatchSize:      cfg.BatchSize,
+		ClusterID:     clusterID,
+		ProtectedVMs:  eligibleVMs,
+		PreferWitness: true, // simplified
+		BatchSize:     cfg.BatchSize,
 	}
 
 	// Assuming we can extract FailedHosts from the fdmAgent ClusterView

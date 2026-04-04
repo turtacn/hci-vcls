@@ -3,13 +3,13 @@ package metrics
 import "github.com/prometheus/client_golang/prometheus"
 
 type PrometheusMetrics struct {
-	electionTotal      *prometheus.CounterVec
-	leaderChange       *prometheus.CounterVec
-	heartbeatLost      *prometheus.CounterVec
-	degradationLevel   *prometheus.GaugeVec
-	haTaskTotal        *prometheus.CounterVec
+	electionTotal       *prometheus.CounterVec
+	leaderChange        *prometheus.CounterVec
+	heartbeatLost       *prometheus.CounterVec
+	degradationLevel    *prometheus.GaugeVec
+	haTaskTotal         *prometheus.CounterVec
 	haExecutionDuration *prometheus.HistogramVec
-	protectedVMCount   *prometheus.GaugeVec
+	protectedVMCount    *prometheus.GaugeVec
 }
 
 var _ Metrics = &PrometheusMetrics{}

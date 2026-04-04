@@ -1,21 +1,18 @@
 package main
 
-import (
-	"fmt"
-	"os"
-)
+import "os"
 
+// Version information set by ldflags
 var (
-	BuildVersion string
-	BuildCommit  string
-	BuildDate    string
+	Version = "dev"
+	Commit  = "none"
+	Date    = "unknown"
 )
 
 func main() {
 	if err := Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

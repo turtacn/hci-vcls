@@ -8,4 +8,4 @@ type Adapter interface {
 	Close() error
 }
 
-//Personal.AI order the ending
+// Personal.AI order the ending

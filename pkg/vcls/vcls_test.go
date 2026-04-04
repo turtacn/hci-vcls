@@ -18,15 +18,15 @@ type mockFDMAgent struct {
 	cv fdm.ClusterView
 }
 
-func (m *mockFDMAgent) Start(ctx context.Context) error                         { return nil }
-func (m *mockFDMAgent) Stop() error                                             { return nil }
-func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel             { return fdm.DegradationNone }
-func (m *mockFDMAgent) OnDegradationChanged(func(fdm.DegradationLevel))         {}
-func (m *mockFDMAgent) OnNodeFailure(func(string))                              {}
-func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState                    { return m.cv.Nodes }
-func (m *mockFDMAgent) IsLeader() bool                                          { return true }
-func (m *mockFDMAgent) LeaderNodeID() string                                    { return "node-1" }
-func (m *mockFDMAgent) ClusterView() fdm.ClusterView                            { return m.cv }
+func (m *mockFDMAgent) Start(ctx context.Context) error                 { return nil }
+func (m *mockFDMAgent) Stop() error                                     { return nil }
+func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel     { return fdm.DegradationNone }
+func (m *mockFDMAgent) OnDegradationChanged(func(fdm.DegradationLevel)) {}
+func (m *mockFDMAgent) OnNodeFailure(func(string))                      {}
+func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState            { return m.cv.Nodes }
+func (m *mockFDMAgent) IsLeader() bool                                  { return true }
+func (m *mockFDMAgent) LeaderNodeID() string                            { return "node-1" }
+func (m *mockFDMAgent) ClusterView() fdm.ClusterView                    { return m.cv }
 
 func TestService_Refresh(t *testing.T) {
 	ctx := context.Background()
@@ -92,7 +92,7 @@ func TestService_Refresh(t *testing.T) {
 	// 5. Idempotent Refresh caching
 	// We call Refresh again, it should return early from cache.
 	// If we clear the CFS client, it won't fail because it's cached.
-	cfsClient = cfs.NewMemoryClient() // empty client
+	cfsClient = cfs.NewMemoryClient()                                      // empty client
 	service = NewService(store, cfsClient, repo, wit, fdmAgent, c, m, log) // inject empty client but same cache
 	err = service.Refresh(ctx, "c1")
 	if err != nil {

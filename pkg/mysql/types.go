@@ -66,10 +66,10 @@ type FDMRecord struct {
 }
 
 type WitnessRecord struct {
-	VMID       string
-	ClusterID  string
-	Available  bool
-	CheckedAt  time.Time
+	VMID      string
+	ClusterID string
+	Available bool
+	CheckedAt time.Time
 }
 
 type TaskStatus string

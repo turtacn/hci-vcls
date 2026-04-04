@@ -14,7 +14,7 @@ var versionCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		resp, err := http.Get("http://localhost:8080/api/v1/version")
 		if err != nil {
-			fmt.Printf("Version: %s, Commit: %s, Date: %s\n", BuildVersion, BuildCommit, BuildDate)
+			fmt.Printf("Version: %s, Commit: %s, Date: %s\n", Version, Commit, Date)
 			return nil
 		}
 		defer resp.Body.Close()

@@ -35,9 +35,9 @@ func TestVMRepository(t *testing.T) {
 
 	// 3. List Protected
 	record2 := &VMRecord{
-		VMID:        "vm-2",
-		ClusterID:   "cluster-1",
-		Protected:   false,
+		VMID:      "vm-2",
+		ClusterID: "cluster-1",
+		Protected: false,
 	}
 	_ = repo.Upsert(ctx, record2)
 
