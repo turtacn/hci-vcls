@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/go-playground/validator/v10"
+	validator "github.com/go-playground/validator/v10"
 )
 
 func (c *Config) Validate() error {
