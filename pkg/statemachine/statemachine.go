@@ -16,18 +16,73 @@ var (
 )
 
 type machineImpl struct {
-	mu      sync.RWMutex
-	current State
-	history []StateTransition
+	mu           sync.RWMutex
+	current      State
+	history      []StateTransition
+	currentLevel string
 }
 
 var _ Machine = &machineImpl{}
 
 func NewMachine() Machine {
 	return &machineImpl{
-		current: StateInit,
-		history: make([]StateTransition, 0),
+		current:      StateInit,
+		history:      make([]StateTransition, 0),
+		currentLevel: string(fdm.DegradationNone),
 	}
+}
+
+// Transition(event string) logic wrapper
+func (m *machineImpl) TransitionString(event string) error {
+	return m.Transition(Event(event))
+}
+
+func (m *machineImpl) EvaluateWithInput(input interface{}) (string, string) {
+	if evalMap, ok := input.(map[string]interface{}); ok {
+		zkState := zk.ZKStateUnavailable
+		if s, ok := evalMap["ZKState"].(int); ok {
+			zkState = zk.HealthState(s)
+		}
+		cfsState := cfs.CFSStateUnavailable
+		if s, ok := evalMap["CFSState"].(int); ok {
+			cfsState = cfs.HealthState(s)
+		}
+		mysqlState := mysql.MySQLStateUnavailable
+		if s, ok := evalMap["MySQLState"].(int); ok {
+			mysqlState = mysql.HealthState(s)
+		}
+		fdmLevel := fdm.DegradationCritical
+		if l, ok := evalMap["FDMLevel"].(fdm.DegradationLevel); ok {
+			fdmLevel = l
+		}
+
+		res := Evaluate(EvaluationInput{
+			ZKStatus:    zk.ZKStatus{State: zkState},
+			CFSStatus:   cfs.CFSStatus{State: cfsState},
+			MySQLStatus: mysql.MySQLStatus{State: mysqlState},
+			FDMLevel:    fdmLevel,
+		})
+		m.mu.Lock()
+		m.currentLevel = string(res.Level)
+		m.mu.Unlock()
+		return string(res.Level), res.Reason
+	}
+
+	evalInput, ok := input.(EvaluationInput)
+	if !ok {
+		return string(fdm.DegradationCritical), "invalid input type"
+	}
+	res := Evaluate(evalInput)
+	m.mu.Lock()
+	m.currentLevel = string(res.Level)
+	m.mu.Unlock()
+	return string(res.Level), res.Reason
+}
+
+func (m *machineImpl) CurrentLevel() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	return m.currentLevel
 }
 
 // 迁移矩阵（完整定义，非法事件返回 error，不 panic，不改变状态）：
@@ -112,19 +167,23 @@ func (m *machineImpl) History() []StateTransition {
 // It is a pure function.
 func Evaluate(input EvaluationInput) EvaluationResult {
 	if input.FDMLevel == fdm.DegradationCritical {
-		return EvaluationResult{Level: fdm.DegradationCritical, Reason: "FDM critical"}
+		return EvaluationResult{Level: fdm.DegradationCritical, Reason: "FDM critical (Isolated)"}
 	}
 
-	// Example logic for degradation mapping
-	if input.ZKStatus.State == zk.ZKStateReadOnly {
-		if input.CFSStatus.State == cfs.CFSStateReadOnly {
-			return EvaluationResult{Level: fdm.DegradationMajor, Reason: "ZK and CFS are read-only (Minority+Cache)"}
-		}
-		return EvaluationResult{Level: fdm.DegradationMinor, Reason: "ZK is read-only (Minority Boot)"}
+	zkRO := input.ZKStatus.State == zk.ZKStateReadOnly
+	cfsRO := input.CFSStatus.State == cfs.CFSStateReadOnly
+	mysqlUnavail := input.MySQLStatus.State == mysql.MySQLStateUnavailable
+
+	if zkRO && cfsRO {
+		return EvaluationResult{Level: fdm.DegradationMajor, Reason: "ZK and CFS are read-only"}
 	}
 
-	if input.MySQLStatus.State == mysql.MySQLStateUnavailable {
+	if mysqlUnavail {
 		return EvaluationResult{Level: fdm.DegradationMajor, Reason: "MySQL unavailable"}
+	}
+
+	if zkRO && !mysqlUnavail {
+		return EvaluationResult{Level: fdm.DegradationMinor, Reason: "ZK is read-only, MySQL is OK"}
 	}
 
 	return EvaluationResult{Level: fdm.DegradationNone, Reason: "Normal"}

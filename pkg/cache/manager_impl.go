@@ -61,18 +61,40 @@ func (m *cacheManagerImpl) GetComputeMeta(ctx context.Context, vmid string) (*VM
 }
 
 func (m *cacheManagerImpl) GetNetworkMeta(ctx context.Context, vmid string) (*VMNetworkMeta, error) {
-	// ... similar logic
-	return nil, nil
+	meta, err := m.nStore.Get(vmid)
+	if err == ErrCacheMiss && m.metaSource != nil {
+		m.stats.Misses++
+		meta, err = m.metaSource.FetchVMNetworkMeta(ctx, vmid)
+		if err == nil && meta != nil {
+			_ = m.nStore.Put(vmid, *meta)
+			m.stats.TotalEntries++
+		}
+	} else if err == nil {
+		m.stats.Hits++
+	}
+	return meta, err
 }
 
 func (m *cacheManagerImpl) GetStorageMeta(ctx context.Context, vmid string) (*VMStorageMeta, error) {
-	// ... similar logic
-	return nil, nil
+	meta, err := m.sStore.Get(vmid)
+	if err == ErrCacheMiss && m.metaSource != nil {
+		m.stats.Misses++
+		meta, err = m.metaSource.FetchVMStorageMeta(ctx, vmid)
+		if err == nil && meta != nil {
+			_ = m.sStore.Put(vmid, *meta)
+			m.stats.TotalEntries++
+		}
+	} else if err == nil {
+		m.stats.Hits++
+	}
+	return meta, err
 }
 
 func (m *cacheManagerImpl) GetHAMeta(ctx context.Context, vmid string) (*VMHAMeta, error) {
-	// ... similar logic
-	return nil, nil
+	if m.metaSource != nil {
+		return m.metaSource.FetchVMHAMeta(ctx, vmid)
+	}
+	return nil, ErrCacheMiss
 }
 
 func (m *cacheManagerImpl) Sync(ctx context.Context, vmid string) error {

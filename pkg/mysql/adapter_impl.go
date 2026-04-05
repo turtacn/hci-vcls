@@ -31,6 +31,50 @@ func (a *adapterImpl) Health() MySQLStatus {
 	return MySQLStatus{State: MySQLStateHealthy, Error: nil}
 }
 
+func (a *adapterImpl) BeginTx() (TxAdapter, error) {
+	tx, err := a.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	return &txAdapterImpl{tx: tx, log: a.log}, nil
+}
+
+type txAdapterImpl struct {
+	tx  *sql.Tx
+	log logger.Logger
+}
+
+func (t *txAdapterImpl) ClaimBoot(claim BootClaim) error {
+	// 乐观锁 + 状态检查
+	res, err := t.tx.Exec(`UPDATE ha_vm_state
+		SET status='booting', target_node=?, token=?
+		WHERE vmid=? AND status IN ('stopped', 'failed')`,
+		claim.TargetNode, claim.Token, claim.VMID)
+
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrOptimisticLockFailed
+	}
+
+	return nil
+}
+
+func (t *txAdapterImpl) Commit() error {
+	return t.tx.Commit()
+}
+
+func (t *txAdapterImpl) Rollback() error {
+	return t.tx.Rollback()
+}
+
 func (a *adapterImpl) ClaimBoot(claim BootClaim) error {
 	res, err := a.db.Exec(`UPDATE ha_vm_state
 		SET status='booting', target_node=?, token=?

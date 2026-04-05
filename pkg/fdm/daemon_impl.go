@@ -27,11 +27,20 @@ func NewDaemon(config DaemonConfig, log logger.Logger, m metrics.Metrics) Daemon
 
 func (d *daemonImpl) Start(ctx context.Context) error {
 	for _, aCfg := range d.config.Agents {
-		// In a real scenario, dependencies would be injected or constructed here
-		// For the skeleton, we mock agent creation or assume agents are added externally
+		// Agent components are wired up via external orchestration,
+		// but the daemon starts the ones registered to it.
 		d.log.Info("Starting agent", "id", aCfg.FDMConfig.NodeID)
+		if agent, ok := d.agents[aCfg.FDMConfig.NodeID]; ok {
+			if err := agent.Start(ctx); err != nil {
+				d.log.Error("Failed to start agent", "id", aCfg.FDMConfig.NodeID, "error", err)
+			}
+		}
 	}
 	return nil
+}
+
+func (d *daemonImpl) RegisterAgent(id string, agent Agent) {
+	d.agents[id] = agent
 }
 
 func (d *daemonImpl) Stop() error {

@@ -53,9 +53,29 @@ func (s *storageStoreImpl) Put(vmid string, meta VMStorageMeta) error {
 	}
 	path := filepath.Join(s.baseDir, vmid+"_storage.json")
 	tmpPath := path + ".tmp"
-	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+
+	f, err := os.OpenFile(tmpPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
 		return err
 	}
+
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		os.Remove(tmpPath)
+		return err
+	}
+
+	if err := f.Sync(); err != nil {
+		f.Close()
+		os.Remove(tmpPath)
+		return err
+	}
+
+	if err := f.Close(); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+
 	return os.Rename(tmpPath, path)
 }
 

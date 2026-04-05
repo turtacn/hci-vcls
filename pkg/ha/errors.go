@@ -12,6 +12,7 @@ var (
 	ErrInvalidPlan     = errors.New("plan is invalid or empty")
 	ErrPartialFailure  = errors.New("HA execution completed with partial failures")
 	ErrLeadershipLost  = errors.New("leadership lost during HA execution")
+	ErrSkippedIsolated = errors.New("ha execution skipped due to isolated state")
 )
 
 var (

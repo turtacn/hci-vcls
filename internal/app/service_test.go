@@ -60,6 +60,11 @@ func (m *mockExecutor) ExecuteWithCallback(ctx context.Context, plan *ha.Plan, c
 	return nil
 }
 
+func (m *mockExecutor) ExecuteWithPlan(ctx context.Context, planInterface interface{}) error {
+	m.executed = true
+	return nil
+}
+
 type mockFDMAgent struct {
 	level fdm.DegradationLevel
 }

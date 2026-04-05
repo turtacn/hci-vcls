@@ -1,5 +1,7 @@
 package cache
 
+import "time"
+
 type VMComputeMeta struct {
 	VMID    string
 	CPUs    int
@@ -35,6 +37,19 @@ type VMHAMeta struct {
 	State   string
 	Token   string
 	Retries int
+}
+
+type CachedEntry struct {
+	Data      interface{}
+	Timestamp time.Time
+	TTL       time.Duration
+}
+
+func (e *CachedEntry) IsExpired() bool {
+	if e.TTL <= 0 {
+		return false
+	}
+	return time.Since(e.Timestamp) > e.TTL
 }
 
 // Personal.AI order the ending

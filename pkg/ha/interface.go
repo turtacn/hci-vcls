@@ -9,6 +9,7 @@ type Planner interface {
 type Executor interface {
 	Execute(ctx context.Context, plan *Plan) error
 	ExecuteWithCallback(ctx context.Context, plan *Plan, onTaskDone func(VMTask)) error
+	ExecuteWithPlan(ctx context.Context, planInterface interface{}) error
 }
 
 // Personal.AI order the ending

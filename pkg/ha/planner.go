@@ -147,7 +147,7 @@ func (p *plannerImpl) BuildPlan(ctx context.Context, req PlanRequest) (*Plan, er
 		ID:           uuid.NewString(),
 		ClusterID:    req.ClusterID,
 		Trigger:      "auto",
-		Degradation:  "", // Can be populated if passed in req
+		Degradation:  req.DegradationLevel,
 		Tasks:        finalTasks,
 		TotalBatches: totalBatches,
 		CreatedAt:    time.Now(),

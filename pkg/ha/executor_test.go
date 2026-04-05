@@ -68,4 +68,31 @@ func TestExecutor_Execute(t *testing.T) {
 	}
 }
 
+func TestExecutor_ExecuteWithOptimisticLock(t *testing.T) {
+	log := logger.NewLogger("debug", "console")
+	mockQM := &mockQMClient{}
+
+	executor := NewExecutor(mockQM, nil, nil, nil, nil, log, 10*time.Millisecond, false)
+	ctx := context.Background()
+
+	plan := &Plan{
+		ID:           "plan-2",
+		TotalBatches: 1,
+		Tasks: []VMTask{
+			{ID: "task-1", Status: TaskPending, VMID: "vm-1", TargetHost: "host-2", BatchNo: 1},
+		},
+	}
+	err := executor.Execute(ctx, plan)
+	if err != nil {
+		t.Fatalf("Expected nil err, got %v", err)
+	}
+
+	// Wait idempotency testing
+	mockQM.startErr = qm.ErrVMAlreadyRunning
+	err = executor.Execute(ctx, plan)
+	if err != nil {
+		t.Errorf("Expected idempotency to hide ErrVMAlreadyRunning, got %v", err)
+	}
+}
+
 // Personal.AI order the ending
