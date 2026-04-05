@@ -112,8 +112,15 @@ func (s *serviceImpl) Refresh(ctx context.Context, clusterID string) error {
 			}
 		}
 
+		// FDM level checks based on cluster view state
+		degradationLevel := cv.DegradationLevel
+
 		// EligibleForHA = Protected && !HostHealthy && PowerState==Running
+		// We can add logic to restrict HA based on degradation level here
 		vm.EligibleForHA = vm.Protected && !vm.HostHealthy && vm.PowerState == PowerRunning
+		if degradationLevel == fdm.OldDegradationAll {
+			vm.EligibleForHA = false // cluster totally failed
+		}
 
 		if vm.EligibleForHA {
 			eligibleCount++

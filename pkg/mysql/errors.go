@@ -20,11 +20,12 @@ func (e *MySQLError) Unwrap() error {
 }
 
 var (
-	ErrBootTokenConflict = &MySQLError{Code: "ERR_BOOT_TOKEN_CONFLICT", Message: "boot token conflict"}
-	ErrBootTokenMismatch = &MySQLError{Code: "ERR_BOOT_TOKEN_MISMATCH", Message: "boot token mismatch"}
-	ErrVMStateNotFound   = &MySQLError{Code: "ERR_VM_STATE_NOT_FOUND", Message: "vm state not found"}
-	ErrMySQLReadOnly     = &MySQLError{Code: "ERR_MYSQL_READ_ONLY", Message: "mysql is read-only"}
-	ErrConnectionPool    = &MySQLError{Code: "ERR_CONNECTION_POOL", Message: "mysql connection pool error"}
+	ErrBootTokenConflict    = &MySQLError{Code: "ERR_BOOT_TOKEN_CONFLICT", Message: "boot token conflict"}
+	ErrBootTokenMismatch    = &MySQLError{Code: "ERR_BOOT_TOKEN_MISMATCH", Message: "boot token mismatch"}
+	ErrVMStateNotFound      = &MySQLError{Code: "ERR_VM_STATE_NOT_FOUND", Message: "vm state not found"}
+	ErrMySQLReadOnly        = &MySQLError{Code: "ERR_MYSQL_READ_ONLY", Message: "mysql is read-only"}
+	ErrConnectionPool       = &MySQLError{Code: "ERR_CONNECTION_POOL", Message: "mysql connection pool error"}
+	ErrOptimisticLockFailed = &MySQLError{Code: "ERR_OPTIMISTIC_LOCK_FAILED", Message: "optimistic lock failed"}
 )
 
 // Personal.AI order the ending

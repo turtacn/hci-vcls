@@ -11,8 +11,9 @@ import (
 type BootPath string
 
 const (
-	BootPathNormal  BootPath = "normal"
-	BootPathWitness BootPath = "witness"
+	BootPathNormal   BootPath = "normal"
+	BootPathWitness  BootPath = "witness"
+	BootPathMinority BootPath = "minority"
 )
 
 type TaskStatus string
@@ -61,12 +62,13 @@ type Plan struct {
 }
 
 type PlanRequest struct {
-	ClusterID      string
-	FailedHosts    []string
-	ProtectedVMs   []*vcls.VM // 来自 vcls.ListEligible
-	HostCandidates []HostCandidate
-	PreferWitness  bool
-	BatchSize      int
+	ClusterID        string
+	FailedHosts      []string
+	ProtectedVMs     []*vcls.VM // 来自 vcls.ListEligible
+	HostCandidates   []HostCandidate
+	PreferWitness    bool
+	BatchSize        int
+	DegradationLevel string
 }
 
 // Old types to keep tests compiling temporarily

@@ -58,6 +58,15 @@ type EvaluationResult struct {
 	Reason string
 }
 
+type Capability string
+
+const (
+	CapabilityNormalBoot   Capability = "NORMAL_BOOT"
+	CapabilityMinorityBoot Capability = "MINORITY_BOOT"
+	CapabilityCacheRead    Capability = "CACHE_READ"
+	CapabilityNoBoot       Capability = "NO_BOOT"
+)
+
 type StateMachineConfig struct {
 	EvaluationIntervalMs int
 	CooldownMs           int

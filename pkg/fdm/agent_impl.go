@@ -53,13 +53,17 @@ func (a *agentImpl) Start(ctx context.Context) error {
 		a.leaderID = info.NodeID
 		a.isLeader = (info.NodeID == a.config.NodeID)
 		if a.isLeader {
-			a.metrics.IncLeaderChange(a.config.ClusterID)
+			if a.metrics != nil {
+				a.metrics.IncLeaderChange(a.config.ClusterID)
+			}
 		}
 	})
 
 	err := a.elector.Campaign(a.ctx)
 	if err != nil {
-		a.log.Error("Failed to start election campaign", "error", err)
+		if a.log != nil {
+			a.log.Error("Failed to start election campaign", "error", err)
+		}
 	}
 
 	go a.probeLoop()

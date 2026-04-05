@@ -101,6 +101,8 @@ func (p *plannerImpl) BuildPlan(ctx context.Context, req PlanRequest) (*Plan, er
 			// Step 5: Choose BootPath
 			if req.PreferWitness && candidates[bestHostIndex].WitnessCapable {
 				task.BootPath = BootPathWitness
+			} else if req.DegradationLevel != "" && req.DegradationLevel != "None" {
+				task.BootPath = BootPathMinority
 			} else {
 				task.BootPath = BootPathNormal
 			}

@@ -76,7 +76,28 @@ func (m *cacheManagerImpl) GetHAMeta(ctx context.Context, vmid string) (*VMHAMet
 }
 
 func (m *cacheManagerImpl) Sync(ctx context.Context, vmid string) error {
-	// Sync logic using metaSource and local stores
+	if m.metaSource == nil {
+		return nil
+	}
+
+	// Fetch Compute Meta
+	cMeta, err := m.metaSource.FetchVMComputeMeta(ctx, vmid)
+	if err == nil && cMeta != nil {
+		m.cStore.Put(vmid, *cMeta)
+	}
+
+	// Fetch Network Meta
+	nMeta, err := m.metaSource.FetchVMNetworkMeta(ctx, vmid)
+	if err == nil && nMeta != nil {
+		m.nStore.Put(vmid, *nMeta)
+	}
+
+	// Fetch Storage Meta
+	sMeta, err := m.metaSource.FetchVMStorageMeta(ctx, vmid)
+	if err == nil && sMeta != nil {
+		m.sStore.Put(vmid, *sMeta)
+	}
+
 	return nil
 }
 

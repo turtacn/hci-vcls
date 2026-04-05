@@ -4,6 +4,11 @@ import (
 	"errors"
 	"sync"
 	"time"
+
+	"github.com/turtacn/hci-vcls/pkg/cfs"
+	"github.com/turtacn/hci-vcls/pkg/fdm"
+	"github.com/turtacn/hci-vcls/pkg/mysql"
+	"github.com/turtacn/hci-vcls/pkg/zk"
 )
 
 var (
@@ -101,6 +106,46 @@ func (m *machineImpl) History() []StateTransition {
 	h := make([]StateTransition, len(m.history))
 	copy(h, m.history)
 	return h
+}
+
+// Evaluate determines the degradation level based on the current cluster status inputs.
+// It is a pure function.
+func Evaluate(input EvaluationInput) EvaluationResult {
+	if input.FDMLevel == fdm.DegradationCritical {
+		return EvaluationResult{Level: fdm.DegradationCritical, Reason: "FDM critical"}
+	}
+
+	// Example logic for degradation mapping
+	if input.ZKStatus.State == zk.ZKStateReadOnly {
+		if input.CFSStatus.State == cfs.CFSStateReadOnly {
+			return EvaluationResult{Level: fdm.DegradationMajor, Reason: "ZK and CFS are read-only (Minority+Cache)"}
+		}
+		return EvaluationResult{Level: fdm.DegradationMinor, Reason: "ZK is read-only (Minority Boot)"}
+	}
+
+	if input.MySQLStatus.State == mysql.MySQLStateUnavailable {
+		return EvaluationResult{Level: fdm.DegradationMajor, Reason: "MySQL unavailable"}
+	}
+
+	return EvaluationResult{Level: fdm.DegradationNone, Reason: "Normal"}
+}
+
+// MapCapabilities maps a degradation level to a set of operational capabilities.
+func MapCapabilities(level fdm.DegradationLevel) []Capability {
+	switch level {
+	case fdm.DegradationNone:
+		return []Capability{CapabilityNormalBoot}
+	case fdm.DegradationMinor:
+		// ZK read-only, but CFS and MySQL are ok
+		return []Capability{CapabilityMinorityBoot}
+	case fdm.DegradationMajor:
+		// ZK read-only, CFS read-only, MySQL might be ok
+		return []Capability{CapabilityMinorityBoot, CapabilityCacheRead}
+	case fdm.DegradationCritical:
+		return []Capability{CapabilityNoBoot}
+	default:
+		return []Capability{CapabilityNoBoot}
+	}
 }
 
 // Personal.AI order the ending

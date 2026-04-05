@@ -94,12 +94,18 @@ func runServe(cfg *config.Config) error {
 	store := vcls.NewMemoryStore()
 	vclsService := vcls.NewService(store, cfsClient, vmRepo, witClient, nil, nil, m, appLogger)
 
-	// Init true minority boot adapters if MySQL DSN is provided, else use placeholders (this is mock initialization logic for serve)
-	qmConfig := qm.QMConfig{TimeoutMs: 30000}
-	qmExecutor := qm.NewExecutor(qmConfig)
+	// Init true minority boot adapters if MySQL DSN is provided, else use placeholders
+	qmExecutor := qm.NewQMAdapter("/usr/sbin/qm")
 
-	// A placeholder MySQL adapter for start; real code would initialize based on cfg.MySQL.DSN
-	var mysqlAdapter mysql.Adapter // leaving as nil for default mock path for now, safely guarded in executor.go
+	var mysqlAdapter mysql.Adapter
+	if cfg.MySQL.DSN != "" {
+		mConfig := mysql.MySQLConfig{
+			DSN:          cfg.MySQL.DSN,
+			MaxOpenConns: 10,
+			MaxIdleConns: 5,
+		}
+		mysqlAdapter, _ = mysql.NewAdapter(mConfig, appLogger)
+	}
 
 	planner := ha.NewPlanner()
 	executor := ha.NewExecutor(qmClient, qmExecutor, mysqlAdapter, taskRepo, m, appLogger, cfg.HA.BatchInterval, cfg.HA.FailFast)

@@ -42,7 +42,11 @@ func (s *localStore) Put(vmid string, meta VMComputeMeta) error {
 		return err
 	}
 	path := filepath.Join(s.baseDir, vmid+".json")
-	return os.WriteFile(path, data, 0644)
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, path)
 }
 
 func (s *localStore) Delete(vmid string) error {
@@ -63,10 +67,13 @@ func (s *localStore) List() ([]VMComputeMeta, error) {
 	var metas []VMComputeMeta
 	for _, f := range files {
 		if !f.IsDir() {
-			vmid := f.Name()[:len(f.Name())-5] // Strip .json
-			meta, err := s.Get(vmid)
-			if err == nil && meta != nil {
-				metas = append(metas, *meta)
+			name := f.Name()
+			if len(name) > 5 && name[len(name)-5:] == ".json" {
+				vmid := name[:len(name)-5]
+				meta, err := s.Get(vmid)
+				if err == nil && meta != nil {
+					metas = append(metas, *meta)
+				}
 			}
 		}
 	}

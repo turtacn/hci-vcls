@@ -32,7 +32,24 @@ func (a *adapterImpl) Health() MySQLStatus {
 }
 
 func (a *adapterImpl) ClaimBoot(claim BootClaim) error {
-	// A real implementation would run an UPDATE WHERE condition to grab a lock or claim row.
+	res, err := a.db.Exec(`UPDATE ha_vm_state
+		SET status='booting', target_node=?, token=?
+		WHERE vmid=? AND status IN ('stopped', 'failed')`,
+		claim.TargetNode, claim.Token, claim.VMID)
+
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrOptimisticLockFailed
+	}
+
 	return nil
 }
 

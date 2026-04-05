@@ -44,4 +44,12 @@ type HeartbeatState struct {
 	IsAlive  bool
 }
 
+type StateDigest struct {
+	NodeID      string    `json:"node_id"`
+	Term        int64     `json:"term"`
+	CandidateID string    `json:"candidate_id"`
+	Timestamp   time.Time `json:"timestamp"`
+	Level       int       `json:"level"`
+}
+
 // Personal.AI order the ending
