@@ -107,7 +107,7 @@ func NewTestService(cfg *config.Config) *TestApp {
 	vclsService := vcls.NewService(store, cfsClient, vmRepo, witClient, nil, nil, m, nil)
 
 	planner := ha.NewPlanner()
-	executor := ha.NewExecutor(qmClient, taskRepo, m, nil, 0, cfg.HA.FailFast)
+	executor := ha.NewExecutor(qmClient, nil, nil, taskRepo, m, nil, 0, cfg.HA.FailFast)
 
 	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, nil)
 

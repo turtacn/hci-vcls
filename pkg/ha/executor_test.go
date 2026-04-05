@@ -25,7 +25,7 @@ func TestExecutor_Execute(t *testing.T) {
 	log := logger.NewLogger("debug", "console")
 	mockQM := &mockQMClient{}
 
-	executor := NewExecutor(mockQM, nil, nil, log, 10*time.Millisecond, false)
+	executor := NewExecutor(mockQM, nil, nil, nil, nil, log, 10*time.Millisecond, false)
 	ctx := context.Background()
 
 	// Test missing plan

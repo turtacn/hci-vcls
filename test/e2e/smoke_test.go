@@ -79,7 +79,7 @@ func setupFullApp(cfg *config.Config) (*app.Service, *rest.Handler, *helpers.Tes
 	vclsService := vcls.NewService(store, cfsClient, vmRepo, witClient, nil, nil, m, nil)
 
 	planner := ha.NewPlanner()
-	executor := ha.NewExecutor(qmClient, taskRepo, m, nil, 0, cfg.HA.FailFast)
+	executor := ha.NewExecutor(qmClient, nil, nil, taskRepo, m, nil, 0, cfg.HA.FailFast)
 
 	fdmAgent := &mockFDMAgent{level: fdm.DegradationNone}
 

@@ -12,6 +12,8 @@ import (
 
 type executorImpl struct {
 	qmClient      qm.Client
+	qmExecutor    qm.Executor
+	mysqlAdapter  mysql.Adapter
 	taskRepo      mysql.HATaskRepository
 	metrics       metrics.Metrics
 	log           logger.Logger
@@ -21,9 +23,11 @@ type executorImpl struct {
 
 var _ Executor = &executorImpl{}
 
-func NewExecutor(qmClient qm.Client, taskRepo mysql.HATaskRepository, m metrics.Metrics, log logger.Logger, batchInterval time.Duration, failFast bool) Executor {
+func NewExecutor(qmClient qm.Client, qmExecutor qm.Executor, mysqlAdapter mysql.Adapter, taskRepo mysql.HATaskRepository, m metrics.Metrics, log logger.Logger, batchInterval time.Duration, failFast bool) Executor {
 	return &executorImpl{
 		qmClient:      qmClient,
+		qmExecutor:    qmExecutor,
+		mysqlAdapter:  mysqlAdapter,
 		taskRepo:      taskRepo,
 		metrics:       m,
 		log:           log,
