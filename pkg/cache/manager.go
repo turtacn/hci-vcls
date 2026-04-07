@@ -3,10 +3,12 @@ package cache
 import "context"
 
 type CacheStats struct {
-	TotalEntries int
-	Hits         int
-	Misses       int
-	Evictions    int
+	TotalEntries  int
+	Hits          int
+	Misses        int
+	Evictions     int
+	SyncFailures  int
+	SyncSuccesses int
 }
 
 type CacheManagerConfig struct {

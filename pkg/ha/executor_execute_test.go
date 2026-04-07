@@ -38,18 +38,42 @@ func (m *mockMySQLTx) Rollback() error {
 type mockMySQLAdapter struct {
 	tx          *mockMySQLTx
 	beginErr    error
-	healthState mysql.MySQLState
+	healthState mysql.HealthState
 }
 
-func (m *mockMySQLAdapter) BeginTx() (mysql.Tx, error) {
+func (m *mockMySQLAdapter) BeginTx() (mysql.TxAdapter, error) {
 	if m.beginErr != nil {
 		return nil, m.beginErr
 	}
 	return m.tx, nil
 }
 
-func (m *mockMySQLAdapter) Health() mysql.HealthInfo {
-	return mysql.HealthInfo{State: m.healthState}
+func (m *mockMySQLAdapter) Health() mysql.MySQLStatus {
+	return mysql.MySQLStatus{State: m.healthState}
+}
+
+func (m *mockMySQLAdapter) ClaimBoot(claim mysql.BootClaim) error {
+	return nil
+}
+
+func (m *mockMySQLAdapter) ConfirmBoot(vmid, token string) error {
+	return nil
+}
+
+func (m *mockMySQLAdapter) ReleaseBoot(vmid, token string) error {
+	return nil
+}
+
+func (m *mockMySQLAdapter) GetVMState(vmid string) (*mysql.HAVMState, error) {
+	return nil, nil
+}
+
+func (m *mockMySQLAdapter) UpsertVMState(state mysql.HAVMState) error {
+	return nil
+}
+
+func (m *mockMySQLAdapter) Close() error {
+	return nil
 }
 
 func (m *mockMySQLAdapter) RunQuery(ctx context.Context, query string, args ...interface{}) error {

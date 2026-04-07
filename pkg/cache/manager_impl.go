@@ -135,19 +135,28 @@ func (m *cacheManagerImpl) Sync(ctx context.Context, vmid string) error {
 
 	// Fetch Compute Meta
 	cMeta, err := m.metaSource.FetchVMComputeMeta(ctx, vmid)
-	if err == nil && cMeta != nil {
+	if err != nil {
+		return err
+	}
+	if cMeta != nil {
 		m.cStore.Put(vmid, *cMeta)
 	}
 
 	// Fetch Network Meta
 	nMeta, err := m.metaSource.FetchVMNetworkMeta(ctx, vmid)
-	if err == nil && nMeta != nil {
+	if err != nil {
+		return err
+	}
+	if nMeta != nil {
 		m.nStore.Put(vmid, *nMeta)
 	}
 
 	// Fetch Storage Meta
 	sMeta, err := m.metaSource.FetchVMStorageMeta(ctx, vmid)
-	if err == nil && sMeta != nil {
+	if err != nil {
+		return err
+	}
+	if sMeta != nil {
 		m.sStore.Put(vmid, *sMeta)
 	}
 

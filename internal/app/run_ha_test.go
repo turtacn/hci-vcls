@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/turtacn/hci-vcls/internal/config"
-	"github.com/turtacn/hci-vcls/internal/election"
 	"github.com/turtacn/hci-vcls/pkg/fdm"
 	"github.com/turtacn/hci-vcls/pkg/ha"
 	"github.com/turtacn/hci-vcls/pkg/vcls"

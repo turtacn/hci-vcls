@@ -176,6 +176,11 @@ func (e *executorImpl) executeBatch(ctx context.Context, batchTasks []VMTask, pl
 		tx, claimErr := e.claimBoot(ctx, &task, plan, currentLevel)
 		if claimErr != nil {
 			batchHasFailure = true
+			for j := range plan.Tasks {
+				if plan.Tasks[j].ID == task.ID {
+					plan.Tasks[j] = task
+				}
+			}
 			continue
 		}
 
@@ -204,7 +209,7 @@ func (e *executorImpl) executeBatch(ctx context.Context, batchTasks []VMTask, pl
 	return batchHasFailure
 }
 
-func (e *executorImpl) claimBoot(ctx context.Context, task *VMTask, plan *Plan, currentLevel string) (mysql.Tx, error) {
+func (e *executorImpl) claimBoot(ctx context.Context, task *VMTask, plan *Plan, currentLevel string) (mysql.TxAdapter, error) {
 	if e.mysqlAdapter == nil {
 		return nil, nil // No adapter, proceed without claim (or mock)
 	}
@@ -267,7 +272,7 @@ func (e *executorImpl) startVM(ctx context.Context, task *VMTask, meta interface
 	return err
 }
 
-func (e *executorImpl) finalizeTask(ctx context.Context, tx mysql.Tx, task *VMTask, startErr error) error {
+func (e *executorImpl) finalizeTask(ctx context.Context, tx mysql.TxAdapter, task *VMTask, startErr error) error {
 	if startErr != nil {
 		// Idempotency: "already running" is considered success
 		if startErr == qm.ErrVMAlreadyRunning {

@@ -80,7 +80,7 @@ func TestCacheManager_SyncLoop_CtxCancel(t *testing.T) {
 
 	mgr := NewCacheManager(config, store, nil, nil, source, logger.Default(), metrics.NewNoopMetrics())
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx := context.Background()
 	mgr.Start(ctx) // internally it uses its own context derived during creation, wait...
 	// Ah, NewCacheManager creates its own ctx, cancel. `Start(ctx)` just starts the loop listening to that internal context.
 	// So to simulate cancellation, we just call Stop().

@@ -6,6 +6,8 @@ import (
 
 	"github.com/turtacn/hci-vcls/pkg/fdm"
 	"github.com/turtacn/hci-vcls/pkg/ha"
+	"github.com/turtacn/hci-vcls/pkg/vcls"
+	"go.uber.org/zap"
 )
 
 // RunHAResult encapsulates the outcome of a single HA orchestration run.
@@ -40,7 +42,7 @@ func (s *Service) RunHAOnce(ctx context.Context, clusterID string, trigger strin
 	// but Critical completely isolates the node.
 	if currentLevel == fdm.DegradationCritical {
 		if s.logger != nil {
-			s.logger.Warn("HA skipped: cluster is in Critical degradation state", "cluster", clusterID)
+			s.logger.Warn("HA skipped: cluster is in Critical degradation state", zap.String("cluster", clusterID))
 		}
 		return &RunHAResult{
 			Skipped: true,
@@ -49,18 +51,6 @@ func (s *Service) RunHAOnce(ctx context.Context, clusterID string, trigger strin
 	}
 
 	// Gather protected VMs
-	var protectedVMs []*ha.VMTask
-	if s.vcls != nil {
-		vms, err := s.vcls.ListEligible(ctx, clusterID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list eligible VMs: %w", err)
-		}
-		// Convert vcls.VM to pointer for planner input.
-		// For the time being, Planner expects a list of vcls.VM pointers or similar.
-		// Wait, the Planner interface expects vcls.VM pointers.
-		// `protectedVMs` in PlanRequest expects `[]*vcls.VM`.
-	}
-
 	var eligibleVMs = make([]*vcls.VM, 0)
 	if s.vcls != nil {
 		vms, err := s.vcls.ListEligible(ctx, clusterID)
@@ -124,7 +114,7 @@ func (s *Service) RunHAOnce(ctx context.Context, clusterID string, trigger strin
 		// Mock mapping to mysql.HAPlan
 		// We'll skip deep persistence implementation in this step if it requires extensive mapping,
 		// but we call planRepo as a placeholder hook.
-		// _ = s.planRepo.Create(ctx, plan)
+		_ = s.planRepo // acknowledge planRepo is used
 	}
 
 	err = s.executor.Execute(ctx, plan)
@@ -137,7 +127,7 @@ func (s *Service) RunHAOnce(ctx context.Context, clusterID string, trigger strin
 	}
 
 	if s.logger != nil {
-		s.logger.Info("HA orchestration completed successfully", "planID", plan.ID, "tasks", len(plan.Tasks))
+		s.logger.Info("HA orchestration completed successfully", zap.String("planID", plan.ID), zap.Int("tasks", len(plan.Tasks)))
 	}
 
 	return &RunHAResult{
