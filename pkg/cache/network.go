@@ -110,4 +110,3 @@ func (s *networkStoreImpl) List() ([]VMNetworkMeta, error) {
 	return metas, nil
 }
 
-// Personal.AI order the ending

@@ -49,4 +49,3 @@ var (
 	ErrInsufficientResources = &BootError{Code: "ERR_INSUFFICIENT_RESOURCES", Message: "insufficient resources on target node"}
 )
 
-// Personal.AI order the ending

@@ -38,4 +38,3 @@ type ConfirmationResponse struct {
 	Error     error
 }
 
-// Personal.AI order the ending

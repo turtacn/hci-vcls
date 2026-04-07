@@ -26,4 +26,3 @@ var (
 	ErrCooldownActive    = &TransitionError{Code: "ERR_COOLDOWN_ACTIVE", Message: "transition cooldown active"}
 )
 
-// Personal.AI order the ending

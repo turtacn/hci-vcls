@@ -45,4 +45,3 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
-// Personal.AI order the ending

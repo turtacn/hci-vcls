@@ -29,4 +29,3 @@ var (
 	ErrSelfIsolated         = &FDMError{Code: "ERR_SELF_ISOLATED", Message: "self isolated"}
 )
 
-// Personal.AI order the ending

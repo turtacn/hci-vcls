@@ -6,4 +6,3 @@
 // responsible for actually executing High Availability (HA) decisions.
 package fdm
 
-// Personal.AI order the ending

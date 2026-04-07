@@ -33,4 +33,3 @@ func (s *Service) Status() StatusResponse {
 	return resp
 }
 
-// Personal.AI order the ending

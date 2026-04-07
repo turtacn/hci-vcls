@@ -15,4 +15,3 @@ func LevelWeight(l DegradationLevel) int {
 	}
 }
 
-// Personal.AI order the ending

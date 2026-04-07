@@ -17,4 +17,3 @@ type TxAdapter interface {
 	Rollback() error
 }
 
-// Personal.AI order the ending

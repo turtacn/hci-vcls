@@ -10,4 +10,3 @@ type Metrics interface {
 	SetProtectedVMCount(cluster string, count float64)
 }
 
-// Personal.AI order the ending

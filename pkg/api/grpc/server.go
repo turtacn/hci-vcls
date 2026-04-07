@@ -63,4 +63,3 @@ func (s *Server) ListTasks(ctx context.Context, req *proto.ListTasksRequest) (*p
 	}, nil
 }
 
-// Personal.AI order the ending

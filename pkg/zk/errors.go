@@ -9,4 +9,3 @@ var (
 	ErrVersionMismatch = errors.New("zk: bad version")
 )
 
-// Personal.AI order the ending

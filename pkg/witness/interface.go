@@ -7,4 +7,3 @@ type Client interface {
 	CheckBatch(ctx context.Context, vmIDs []string) (map[string]*WitnessState, error)
 }
 
-// Personal.AI order the ending

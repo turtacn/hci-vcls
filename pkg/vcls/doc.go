@@ -4,4 +4,3 @@
 // degradation level.
 package vcls
 
-// Personal.AI order the ending

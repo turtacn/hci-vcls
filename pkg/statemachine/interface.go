@@ -12,4 +12,3 @@ type Machine interface {
 	CurrentLevel() string
 }
 
-// Personal.AI order the ending

@@ -10,4 +10,3 @@ type Executor interface {
 	Unlock(ctx context.Context, vmid string) error
 }
 
-// Personal.AI order the ending

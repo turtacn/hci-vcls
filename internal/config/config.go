@@ -39,4 +39,3 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
-// Personal.AI order the ending

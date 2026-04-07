@@ -101,4 +101,3 @@ func (m *PrometheusMetrics) SetProtectedVMCount(cluster string, count float64) {
 	m.protectedVMCount.WithLabelValues(cluster).Set(count)
 }
 
-// Personal.AI order the ending

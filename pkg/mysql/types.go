@@ -104,4 +104,3 @@ type PlanRecord struct {
 	CreatedAt   time.Time
 }
 
-// Personal.AI order the ending

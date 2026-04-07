@@ -6,4 +6,3 @@
 // the logic pure, easily testable, and loosely coupled.
 package statemachine
 
-// Personal.AI order the ending

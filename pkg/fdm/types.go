@@ -73,4 +73,3 @@ type ClusterView struct {
 	DegradationLevel OldDegradationLevel
 }
 
-// Personal.AI order the ending

@@ -28,4 +28,3 @@ var (
 	ErrOptimisticLockFailed = &MySQLError{Code: "ERR_OPTIMISTIC_LOCK_FAILED", Message: "optimistic lock failed"}
 )
 
-// Personal.AI order the ending

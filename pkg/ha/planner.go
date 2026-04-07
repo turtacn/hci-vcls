@@ -199,4 +199,3 @@ func ScoreHost(host HostCandidate, sourceFaultDomain string, preferWitness bool)
 	return score, fmt.Sprintf("HostID=%s: %s", host.HostID, strings.Join(reasons, ", "))
 }
 
-// Personal.AI order the ending

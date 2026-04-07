@@ -58,4 +58,3 @@ func newHACmd() *cobra.Command {
 	return cmd
 }
 
-// Personal.AI order the ending

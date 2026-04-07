@@ -5,4 +5,3 @@
 // should not reside in this package.
 package grpc
 
-// Personal.AI order the ending

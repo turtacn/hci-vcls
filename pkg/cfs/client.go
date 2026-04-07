@@ -83,4 +83,3 @@ func (c *MemoryClient) GetHost(ctx context.Context, hostID string) (*Host, error
 	return host, nil
 }
 
-// Personal.AI order the ending

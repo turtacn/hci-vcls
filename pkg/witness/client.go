@@ -60,4 +60,3 @@ func (c *MemoryClient) CheckBatch(ctx context.Context, vmIDs []string) (map[stri
 	return result, nil
 }
 
-// Personal.AI order the ending

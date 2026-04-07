@@ -27,4 +27,3 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Personal.AI order the ending

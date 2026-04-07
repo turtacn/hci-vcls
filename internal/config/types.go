@@ -81,4 +81,3 @@ type Config struct {
 	GRPC      GRPCConfig      `mapstructure:"grpc"`
 }
 
-// Personal.AI order the ending

@@ -167,4 +167,3 @@ func (s *serviceImpl) ListEligible(ctx context.Context, clusterID string) ([]*VM
 	return s.store.ListEligible(clusterID), nil
 }
 
-// Personal.AI order the ending

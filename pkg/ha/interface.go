@@ -12,4 +12,3 @@ type Executor interface {
 	ExecuteWithPlan(ctx context.Context, planInterface interface{}) error
 }
 
-// Personal.AI order the ending

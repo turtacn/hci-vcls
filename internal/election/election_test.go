@@ -76,4 +76,3 @@ func TestMemoryElector_Competition(t *testing.T) {
 	}
 }
 
-// Personal.AI order the ending

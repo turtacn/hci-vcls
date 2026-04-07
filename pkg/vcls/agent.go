@@ -16,4 +16,3 @@ type Agent interface {
 	ActiveCapabilities() []Capability
 }
 
-// Personal.AI order the ending

@@ -12,4 +12,3 @@ type Elector interface {
 	OnLeaderChange(callback func(info LeaderInfo)) // backward compat
 }
 
-// Personal.AI order the ending

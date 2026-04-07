@@ -5,4 +5,3 @@
 // the internal/election package.
 package zk
 
-// Personal.AI order the ending

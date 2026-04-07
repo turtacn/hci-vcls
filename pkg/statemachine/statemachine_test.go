@@ -112,4 +112,3 @@ func TestEvaluate(t *testing.T) {
 	}
 }
 
-// Personal.AI order the ending

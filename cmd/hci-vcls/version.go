@@ -29,4 +29,3 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 }
 
-// Personal.AI order the ending

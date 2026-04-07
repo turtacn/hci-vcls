@@ -6,4 +6,3 @@
 // holding all parameters for all the application's components.
 package config
 
-// Personal.AI order the ending

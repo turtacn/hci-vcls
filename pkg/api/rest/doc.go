@@ -5,4 +5,3 @@
 // business rules should be encapsulated here.
 package rest
 
-// Personal.AI order the ending

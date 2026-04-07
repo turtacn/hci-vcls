@@ -110,4 +110,3 @@ func (s *storageStoreImpl) List() ([]VMStorageMeta, error) {
 	return metas, nil
 }
 
-// Personal.AI order the ending

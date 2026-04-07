@@ -16,4 +16,3 @@ func TestStatusCmd(t *testing.T) {
 	cmd.SetErr(buf)
 }
 
-// Personal.AI order the ending

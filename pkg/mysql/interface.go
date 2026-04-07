@@ -20,4 +20,3 @@ type PlanRepository interface {
 	GetByID(ctx context.Context, planID string) (*PlanRecord, error)
 }
 
-// Personal.AI order the ending

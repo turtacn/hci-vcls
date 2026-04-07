@@ -95,4 +95,3 @@ func (a *adapterImpl) Unlock(ctx context.Context, vmid string) error {
 	return cmd.Run()
 }
 
-// Personal.AI order the ending

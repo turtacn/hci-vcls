@@ -127,4 +127,3 @@ func (s *Service) EvaluateHA(ctx context.Context, clusterID string) (*ha.Plan, e
 	return plan, nil
 }
 
-// Personal.AI order the ending

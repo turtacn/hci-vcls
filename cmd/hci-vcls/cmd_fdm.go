@@ -59,4 +59,3 @@ func newFdmCmd() *cobra.Command {
 	return cmd
 }
 
-// Personal.AI order the ending

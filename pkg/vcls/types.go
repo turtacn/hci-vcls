@@ -59,4 +59,3 @@ type Status struct {
 	LastRefreshAt  time.Time
 }
 
-// Personal.AI order the ending

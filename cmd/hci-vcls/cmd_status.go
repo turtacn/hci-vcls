@@ -26,4 +26,3 @@ func newStatusCmd() *cobra.Command {
 	}
 }
 
-// Personal.AI order the ending

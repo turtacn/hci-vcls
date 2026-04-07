@@ -16,4 +16,3 @@
 //     in MySQL as necessary.
 package ha
 
-// Personal.AI order the ending

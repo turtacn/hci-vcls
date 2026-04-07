@@ -17,4 +17,3 @@ type Service interface {
 	ListEligible(ctx context.Context, clusterID string) ([]*VM, error)
 }
 
-// Personal.AI order the ending

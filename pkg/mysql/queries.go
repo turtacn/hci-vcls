@@ -26,4 +26,3 @@ const (
 	queryGetPlan    = `SELECT * FROM ha_plans WHERE id = ?`
 )
 
-// Personal.AI order the ending

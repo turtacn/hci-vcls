@@ -106,4 +106,3 @@ func TestService_Refresh(t *testing.T) {
 	}
 }
 
-// Personal.AI order the ending

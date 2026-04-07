@@ -9,4 +9,3 @@ type Client interface {
 	GetHost(ctx context.Context, hostID string) (*Host, error)
 }
 
-// Personal.AI order the ending

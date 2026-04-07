@@ -120,4 +120,3 @@ func maxLevel(a, b DegradationLevel) DegradationLevel {
 	return b
 }
 
-// Personal.AI order the ending

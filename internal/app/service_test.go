@@ -67,6 +67,7 @@ func (m *mockExecutor) ExecuteWithPlan(ctx context.Context, planInterface interf
 
 type mockFDMAgent struct {
 	level fdm.DegradationLevel
+	nodes map[string]fdm.NodeState
 }
 
 func (m *mockFDMAgent) Start(ctx context.Context) error                 { return nil }
@@ -74,7 +75,12 @@ func (m *mockFDMAgent) Stop() error                                     { return
 func (m *mockFDMAgent) LocalDegradationLevel() fdm.DegradationLevel     { return m.level }
 func (m *mockFDMAgent) OnDegradationChanged(func(fdm.DegradationLevel)) {}
 func (m *mockFDMAgent) OnNodeFailure(func(string))                      {}
-func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState            { return nil }
+func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState {
+	if m.nodes != nil {
+		return m.nodes
+	}
+	return map[string]fdm.NodeState{}
+}
 func (m *mockFDMAgent) IsLeader() bool                                  { return true }
 func (m *mockFDMAgent) LeaderNodeID() string                            { return "node1" }
 func (m *mockFDMAgent) ClusterView() fdm.ClusterView                    { return fdm.ClusterView{} }
@@ -168,4 +174,3 @@ func TestEvaluateHA_NormalPath(t *testing.T) {
 	}
 }
 
-// Personal.AI order the ending

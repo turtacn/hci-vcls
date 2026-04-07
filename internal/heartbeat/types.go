@@ -52,4 +52,3 @@ type StateDigest struct {
 	Level       int       `json:"level"`
 }
 
-// Personal.AI order the ending

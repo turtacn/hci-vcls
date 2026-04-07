@@ -36,4 +36,3 @@ func (s *Server) Stop(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
 }
 
-// Personal.AI order the ending

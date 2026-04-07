@@ -16,4 +16,3 @@ func (m *NoopMetrics) IncHATaskTotal(cluster, status string)                    
 func (m *NoopMetrics) ObserveHAExecutionDuration(cluster string, seconds float64) {}
 func (m *NoopMetrics) SetProtectedVMCount(cluster string, count float64)          {}
 
-// Personal.AI order the ending

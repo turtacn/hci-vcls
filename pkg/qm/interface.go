@@ -12,4 +12,3 @@ type Client interface {
 	WaitTask(ctx context.Context, taskID string, timeout time.Duration) (*Task, error)
 }
 
-// Personal.AI order the ending

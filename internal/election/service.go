@@ -58,4 +58,3 @@ func (s *ElectionService) watchLoop() {
 	}
 }
 
-// Personal.AI order the ending

@@ -14,4 +14,3 @@ type Client interface {
 	SessionState() SessionState
 }
 
-// Personal.AI order the ending

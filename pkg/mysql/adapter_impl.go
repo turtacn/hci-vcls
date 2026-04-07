@@ -120,4 +120,3 @@ func (a *adapterImpl) Close() error {
 	return nil
 }
 
-// Personal.AI order the ending

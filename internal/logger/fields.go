@@ -10,4 +10,3 @@ const (
 	FieldTraceID   = "trace_id"
 )
 
-// Personal.AI order the ending

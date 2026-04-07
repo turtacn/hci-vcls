@@ -46,4 +46,3 @@ func TestMemoryClient_Hosts(t *testing.T) {
 	}
 }
 
-// Personal.AI order the ending

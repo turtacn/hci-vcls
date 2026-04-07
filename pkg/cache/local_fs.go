@@ -102,4 +102,3 @@ func (s *localStore) List() ([]VMComputeMeta, error) {
 
 // ... similar minimal implementations for NetworkStore and StorageStore ...
 
-// Personal.AI order the ending

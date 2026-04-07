@@ -23,4 +23,3 @@ type LeaderInfo struct {
 	Term   uint64
 }
 
-// Personal.AI order the ending

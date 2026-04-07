@@ -73,19 +73,10 @@ func (e *executorImpl) ExecuteWithCallback(ctx context.Context, plan *Plan, onTa
 		return ErrInvalidPlan
 	}
 
-	// 1. StateMachine Check (Requirement: Prevent execution in inappropriate states using thread-safe state machine read)
-	currentLevel := "None"
-	if e.stateMachine != nil {
-		currentLevel = e.stateMachine.CurrentLevel()
-	} else if plan.Degradation != "" {
-		currentLevel = plan.Degradation
-	}
+	currentLevel := e.getCurrentLevel(plan)
 
-	if currentLevel == "Critical" {
-		if e.log != nil {
-			e.log.Warn("HA execution skipped: cluster degradation level is Critical (Isolated)", "cluster", plan.ClusterID)
-		}
-		return ErrSkippedIsolated
+	if err := e.validateExecutionGate(plan, currentLevel); err != nil {
+		return err
 	}
 
 	start := time.Now()
@@ -95,15 +86,7 @@ func (e *executorImpl) ExecuteWithCallback(ctx context.Context, plan *Plan, onTa
 		}
 	}()
 
-	// Group tasks by batch
-	batches := make(map[int][]VMTask)
-	for _, t := range plan.Tasks {
-		if t.Status == TaskSkipped {
-			continue
-		}
-		batches[t.BatchNo] = append(batches[t.BatchNo], t)
-	}
-
+	batches := e.groupTasksByBatch(plan)
 	var hasFailure bool
 
 	for i := 1; i <= plan.TotalBatches; i++ {
@@ -121,108 +104,7 @@ func (e *executorImpl) ExecuteWithCallback(ctx context.Context, plan *Plan, onTa
 		default:
 		}
 
-		batchHasFailure := false
-
-		// In a real system, these would run in parallel goroutines.
-		// For simplicity in the mock executor, we can run them sequentially or use a simple waitgroup.
-		for _, task := range batchTasks {
-			task.Status = TaskExecuting
-			e.updateTaskStatus(ctx, task.ID, task.Status)
-
-			// 2. Optimistic Lock
-			// If state is DegradationMajor indicating MySQL unavailable, we must skip the locking phase or handle appropriately
-			// The instructions say "handle MySQL unavailability for the locking phase specifically"
-			// The instructions explicitly said "prevent execution in inappropriate states (e.g., MYSQL_UNAVAIL where locking is impossible)".
-			// Wait, the prompt says: "If the state is DegradationZKReadOnly, execution must proceed via the 'Minority Path' (MySQL Lock)."
-			// So if it's Major (which might mean MySQL Unavail), we should skip locking if MySQL is the reason.
-			// Since we only have `currentLevel`, let's just do a health check on the adapter if we are unsure, or rely on the transaction error.
-			// Let's implement it correctly: if BeginTx fails, it means we can't lock. But if MySQL is officially unavailable via state, we shouldn't even try if it blocks.
-			if e.mysqlAdapter != nil {
-				if currentLevel == "Major" && e.mysqlAdapter.Health().State == mysql.MySQLStateUnavailable {
-					task.Status = TaskFailed
-					task.Reason = "MySQL unavailable, cannot acquire optimistic lock"
-					e.updateTaskStatus(ctx, task.ID, task.Status)
-					if e.log != nil {
-						e.log.Error("MySQL unavailable, skipping boot to avoid split-brain", "vm", task.VMID)
-					}
-					batchHasFailure = true
-					continue
-				}
-
-				tx, err := e.mysqlAdapter.BeginTx()
-				if err == nil {
-					claimErr := tx.ClaimBoot(mysql.BootClaim{
-						VMID:       task.VMID,
-						Token:      plan.ID,
-						TargetNode: task.TargetHost,
-					})
-					if claimErr != nil {
-						_ = tx.Rollback()
-						task.Status = TaskFailed
-						task.Reason = "optimistic lock failed"
-						e.updateTaskStatus(ctx, task.ID, task.Status)
-						if e.log != nil {
-							e.log.Warn("Failed to claim boot", "vm", task.VMID, "error", claimErr)
-						}
-						continue
-					}
-					_ = tx.Commit()
-				} else {
-					// BeginTx failed
-					task.Status = TaskFailed
-					task.Reason = "failed to start transaction for optimistic lock"
-					e.updateTaskStatus(ctx, task.ID, task.Status)
-					if e.log != nil {
-						e.log.Warn("Failed to start tx for boot claim", "vm", task.VMID, "error", err)
-					}
-					continue
-				}
-			}
-
-			// 3. Cache Fallback check
-			// If plan degradation involves CFS read-only, we should rely on cache
-			// Assuming BootPathMinority implies potential CFS issues or using local config
-			if task.BootPath == BootPathMinority && e.cache != nil {
-				_, cacheErr := e.cache.GetComputeMeta(ctx, task.VMID)
-				if cacheErr != nil && e.log != nil {
-					e.log.Warn("Failed to read from cache during fallback", "vm", task.VMID, "error", cacheErr)
-				}
-				// In a real system, the retrieved meta is formatted into qm parameters.
-			}
-
-			// 4. Execute via QM
-			_, err := e.qmClient.StartVM(ctx, task.VMID, task.ClusterID, task.TargetHost, string(task.BootPath))
-
-			if err != nil {
-				// Handle Idempotency: "already running" is considered success
-				if err == qm.ErrVMAlreadyRunning {
-					task.Status = TaskDone
-					if e.log != nil {
-						e.log.Info("VM already running, treating as success", "vm", task.VMID)
-					}
-				} else {
-					task.Status = TaskFailed
-					task.RetryCount++
-					batchHasFailure = true
-					if e.log != nil {
-						e.log.Error("Failed to start VM via QM", "vm", task.VMID, "error", err)
-					}
-				}
-			} else {
-				task.Status = TaskDone
-			}
-
-			e.updateTaskStatus(ctx, task.ID, task.Status)
-
-			if e.metrics != nil {
-				e.metrics.IncHATaskTotal(task.ClusterID, string(task.Status))
-			}
-
-			if onTaskDone != nil {
-				onTaskDone(task)
-			}
-		}
-
+		batchHasFailure := e.executeBatch(ctx, batchTasks, plan, currentLevel, onTaskDone)
 		if batchHasFailure {
 			hasFailure = true
 			if e.failFast {
@@ -246,6 +128,188 @@ func (e *executorImpl) ExecuteWithCallback(ctx context.Context, plan *Plan, onTa
 		return ErrPartialFailure
 	}
 
+	return nil
+}
+
+func (e *executorImpl) getCurrentLevel(plan *Plan) string {
+	currentLevel := "None"
+	if e.stateMachine != nil {
+		currentLevel = e.stateMachine.CurrentLevel()
+	} else if plan.Degradation != "" {
+		currentLevel = plan.Degradation
+	}
+	return currentLevel
+}
+
+func (e *executorImpl) validateExecutionGate(plan *Plan, level string) error {
+	// Refactored to not strictly use magic strings if possible, but currently we receive level as string.
+	// Assume "Critical" maps to Isolated.
+	if level == "Critical" {
+		if e.log != nil {
+			e.log.Warn("HA execution skipped: cluster degradation level is Critical (Isolated)", "cluster", plan.ClusterID)
+		}
+		return ErrSkippedIsolated
+	}
+	return nil
+}
+
+func (e *executorImpl) groupTasksByBatch(plan *Plan) map[int][]VMTask {
+	batches := make(map[int][]VMTask)
+	for _, t := range plan.Tasks {
+		if t.Status == TaskSkipped {
+			continue
+		}
+		batches[t.BatchNo] = append(batches[t.BatchNo], t)
+	}
+	return batches
+}
+
+func (e *executorImpl) executeBatch(ctx context.Context, batchTasks []VMTask, plan *Plan, currentLevel string, onTaskDone func(VMTask)) bool {
+	batchHasFailure := false
+
+	// Execute sequentially within the batch for simplicity (or can be parallelized later)
+	for _, task := range batchTasks {
+		task.Status = TaskExecuting
+		e.updateTaskStatus(ctx, task.ID, task.Status)
+
+		// 1. Claim Boot
+		tx, claimErr := e.claimBoot(ctx, &task, plan, currentLevel)
+		if claimErr != nil {
+			batchHasFailure = true
+			continue
+		}
+
+		// 2. Load Cached Meta if necessary
+		meta, metaErr := e.loadCachedMeta(ctx, &task)
+		if metaErr != nil && e.log != nil {
+			e.log.Warn("Failed to read from cache during fallback", "vm", task.VMID, "error", metaErr)
+			// Decide if cache miss is terminal or not. For now, log warning and proceed (might fail qm start if meta is critical).
+			// If meta is strictly required for this boot path, we could fail early here.
+		}
+
+		// 3. Start VM via QM
+		err := e.startVM(ctx, &task, meta)
+
+		// 4. Finalize Task (Handle idempotency and errors)
+		terminalErr := e.finalizeTask(ctx, tx, &task, err)
+		if terminalErr != nil {
+			batchHasFailure = true
+		}
+
+		if onTaskDone != nil {
+			onTaskDone(task)
+		}
+	}
+
+	return batchHasFailure
+}
+
+func (e *executorImpl) claimBoot(ctx context.Context, task *VMTask, plan *Plan, currentLevel string) (mysql.Tx, error) {
+	if e.mysqlAdapter == nil {
+		return nil, nil // No adapter, proceed without claim (or mock)
+	}
+
+	// Avoid split brain if MySQL is definitely unavailable
+	if currentLevel == "Major" && e.mysqlAdapter.Health().State == mysql.MySQLStateUnavailable {
+		task.Status = TaskFailed
+		task.Reason = "MySQL unavailable, cannot acquire optimistic lock"
+		e.updateTaskStatus(ctx, task.ID, task.Status)
+		if e.log != nil {
+			e.log.Error("MySQL unavailable, skipping boot to avoid split-brain", "vm", task.VMID)
+		}
+		return nil, ErrPartialFailure
+	}
+
+	tx, err := e.mysqlAdapter.BeginTx()
+	if err != nil {
+		task.Status = TaskFailed
+		task.Reason = "failed to start transaction for optimistic lock"
+		e.updateTaskStatus(ctx, task.ID, task.Status)
+		if e.log != nil {
+			e.log.Warn("Failed to start tx for boot claim", "vm", task.VMID, "error", err)
+		}
+		return nil, err
+	}
+
+	claimErr := tx.ClaimBoot(mysql.BootClaim{
+		VMID:       task.VMID,
+		Token:      plan.ID,
+		TargetNode: task.TargetHost,
+	})
+
+	if claimErr != nil {
+		_ = tx.Rollback()
+		task.Status = TaskFailed
+		task.Reason = "optimistic lock failed"
+		e.updateTaskStatus(ctx, task.ID, task.Status)
+		if e.log != nil {
+			e.log.Warn("Failed to claim boot", "vm", task.VMID, "error", claimErr)
+		}
+		return nil, claimErr
+	}
+
+	return tx, nil
+}
+
+func (e *executorImpl) loadCachedMeta(ctx context.Context, task *VMTask) (interface{}, error) {
+	// If path relies on minority or cache
+	if task.BootPath == BootPathMinority && e.cache != nil {
+		meta, err := e.cache.GetComputeMeta(ctx, task.VMID)
+		// In a complete implementation, store meta into some struct expected by qm
+		return meta, err
+	}
+	return nil, nil
+}
+
+func (e *executorImpl) startVM(ctx context.Context, task *VMTask, meta interface{}) error {
+	// Assuming StartVM doesn't accept meta yet, we pass what we can
+	_, err := e.qmClient.StartVM(ctx, task.VMID, task.ClusterID, task.TargetHost, string(task.BootPath))
+	return err
+}
+
+func (e *executorImpl) finalizeTask(ctx context.Context, tx mysql.Tx, task *VMTask, startErr error) error {
+	if startErr != nil {
+		// Idempotency: "already running" is considered success
+		if startErr == qm.ErrVMAlreadyRunning {
+			task.Status = TaskDone
+			task.Reason = "already running"
+			if e.log != nil {
+				e.log.Info("VM already running, treating as success", "vm", task.VMID)
+			}
+			if tx != nil {
+				_ = tx.Commit() // we successfully claimed and it's running
+			}
+		} else {
+			// Failure
+			task.Status = TaskFailed
+			task.Reason = startErr.Error()
+			task.RetryCount++
+			if e.log != nil {
+				e.log.Error("Failed to start VM via QM", "vm", task.VMID, "error", startErr)
+			}
+			if tx != nil {
+				// We claimed but failed to start, so rollback the claim
+				// TODO: In adapter level, tx.Rollback() should release the claim or mark it as failed if DB state was updated explicitly.
+				_ = tx.Rollback()
+			}
+		}
+	} else {
+		task.Status = TaskDone
+		task.Reason = "success"
+		if tx != nil {
+			_ = tx.Commit()
+		}
+	}
+
+	e.updateTaskStatus(ctx, task.ID, task.Status)
+
+	if e.metrics != nil {
+		e.metrics.IncHATaskTotal(task.ClusterID, string(task.Status))
+	}
+
+	if task.Status == TaskFailed {
+		return startErr
+	}
 	return nil
 }
 
@@ -274,5 +338,3 @@ func (e *executorImpl) updateTaskStatus(ctx context.Context, taskID string, stat
 		e.log.Warn("Failed to update task status in repo", "task", taskID, "error", err)
 	}
 }
-
-// Personal.AI order the ending

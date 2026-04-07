@@ -48,4 +48,3 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("grpc.max_recv_msg_size", 4194304) // 4MB
 }
 
-// Personal.AI order the ending
