@@ -12,3 +12,5 @@ coverage.out
 # OS specific
 .DS_Store
 .idea/
+/ai/
+/ai/round01/
