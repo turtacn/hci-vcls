@@ -233,7 +233,7 @@ pci_devices.json 结构：
 
 ### 1.3 降级调度器设计：复用 HCI Scheduler 的正确姿势
 
-这是整个少数派调度问题中最关键的工程决策点。现有 HCI 调度器（如 Proxmox VE 的 HAService 调度逻辑）是为"全知正常态"设计的，在少数派场景下直接复用会面临三个核心障碍：
+这是整个少数派调度问题中最关键的工程决策点。现有 HCI 调度器是为"全知正常态"设计的，在少数派场景下直接复用会面临三个核心障碍：
 
 第一，调度器依赖 ZK 写锁完成调度决策的原子提交，少数派下写锁不可用。
 
@@ -371,7 +371,7 @@ hci-vcls 的处理策略是引入"规则降级等级"的概念：
 
 用一个形象的比喻：传统 HA 解决的是"把人从倒塌的房子里救出来，送到另一栋楼"；而网元重建解决的是"另一栋楼的电梯、水电、门禁系统也坏了，需要在送人进去之前先把这些基础设施修好"。
 
-这个问题在 Proxmox VE 的 SDN 功能（Software Defined Networking）启用后尤为突出。PVE SDN 支持 VXLAN、EVPN、Simple 等多种网络类型，其中 EVPN 依赖 FRRouting 进程提供 BGP 路由，VXLAN 依赖特定节点上的 VTEP（VXLAN Tunnel Endpoint）配置。当承载这些网元功能的节点故障后，网络功能需要在存活节点上重建 [2]。
+例如：PVE SDN 支持 VXLAN、EVPN、Simple 等多种网络类型，其中 EVPN 依赖 FRRouting 进程提供 BGP 路由，VXLAN 依赖特定节点上的 VTEP（VXLAN Tunnel Endpoint）配置。当承载这些网元功能的节点故障后，网络功能需要在存活节点上重建 [2]。
 
 ### 2.2 需要重建的网元资源分类
 
