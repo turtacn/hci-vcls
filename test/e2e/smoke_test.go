@@ -73,7 +73,8 @@ func setupFullApp(cfg *config.Config) (*app.Service, *rest.Handler, *helpers.Tes
 		TimeoutMs:  50,
 	}
 
-	hbService := heartbeat.NewService(hbConfig, monitor, elector, evaluator, sm, m, nil)
+	mockHB := heartbeat.NewHeartbeater(hbConfig, nil)
+	hbService := heartbeat.NewService(hbConfig, mockHB, monitor, elector, evaluator, sm, m, nil)
 
 	store := vcls.NewMemoryStore()
 	vclsService := vcls.NewService(store, cfsClient, vmRepo, witClient, nil, nil, m, nil)
@@ -209,7 +210,9 @@ func TestE2E_Loop3_HADecisionAndExecution(t *testing.T) {
 	// To bypass strict init -> stable -> degraded, we can recreate machine or force
 
 	// Set leader
+	testApp.Elector.SetNodesCount(1)
 	_ = testApp.Elector.Campaign(context.Background())
+	defer testApp.Elector.Close()
 	if !testApp.Elector.IsLeader() {
 		t.Fatalf("Expected to be leader")
 	}

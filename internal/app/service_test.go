@@ -28,6 +28,9 @@ func (m *mockElector) Resign(ctx context.Context) error                       { 
 func (m *mockElector) Watch() <-chan election.LeaderStatus                    { return nil }
 func (m *mockElector) Close() error                                           { return nil }
 func (m *mockElector) OnLeaderChange(callback func(info election.LeaderInfo)) {}
+func (m *mockElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {}
+func (m *mockElector) CurrentTermAndVote() (int64, string, bool) { return 0, "", false }
+func (m *mockElector) SetNodesCount(count int) {}
 
 type mockVCLS struct {
 	eligible []*vcls.VM

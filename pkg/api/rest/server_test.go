@@ -41,6 +41,7 @@ func setupTestRouter() (*gin.Engine, *app.Service) {
 	cfg.Node.ClusterID = "test-cluster"
 
 	elector := election.NewMemoryElector("test-node")
+	elector.SetNodesCount(1) // Single node cluster becomes leader immediately
 	_ = elector.Campaign(context.Background())
 	m := metrics.NewNoopMetrics()
 

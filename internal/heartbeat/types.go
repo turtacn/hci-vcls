@@ -48,6 +48,7 @@ type StateDigest struct {
 	NodeID      string    `json:"node_id"`
 	Term        int64     `json:"term"`
 	CandidateID string    `json:"candidate_id"`
+	IsLeader    bool      `json:"is_leader"`
 	Timestamp   time.Time `json:"timestamp"`
 	Level       int       `json:"level"`
 }

@@ -16,6 +16,7 @@ type StorageHeartbeater struct {
 	peerStatesMu sync.RWMutex
 	deadCbs      []func(string)
 	recoveredCbs []func(string)
+	digestCbs    []func(StateDigest)
 	ctx          context.Context
 	cancel       context.CancelFunc
 	stateDigest  *StateDigest
@@ -32,6 +33,7 @@ func NewStorageHeartbeater(config HeartbeatConfig, dir string) *StorageHeartbeat
 		peerStates:   make(map[string]HeartbeatState),
 		deadCbs:      make([]func(string), 0),
 		recoveredCbs: make([]func(string), 0),
+		digestCbs:    make([]func(StateDigest), 0),
 		ctx:          ctx,
 		cancel:       cancel,
 		stateDigest: &StateDigest{
@@ -92,11 +94,16 @@ func (h *StorageHeartbeater) OnPeerRecovered(callback func(nodeID string)) {
 	h.recoveredCbs = append(h.recoveredCbs, callback)
 }
 
-func (h *StorageHeartbeater) UpdateDigest(term int64, candidateID string) {
+func (h *StorageHeartbeater) OnDigestReceived(callback func(digest StateDigest)) {
+	h.digestCbs = append(h.digestCbs, callback)
+}
+
+func (h *StorageHeartbeater) UpdateDigest(term int64, candidateID string, isLeader bool) {
 	h.digestMu.Lock()
 	defer h.digestMu.Unlock()
 	h.stateDigest.Term = term
 	h.stateDigest.CandidateID = candidateID
+	h.stateDigest.IsLeader = isLeader
 }
 
 func (h *StorageHeartbeater) writeLoop() {
@@ -160,6 +167,11 @@ func (h *StorageHeartbeater) readLoop() {
 
 					if !wasAlive {
 						h.notifyRecovered(peer)
+					}
+
+					// Only trigger digest received if it's a new update
+					for _, cb := range h.digestCbs {
+						cb(digest)
 					}
 				}
 			}

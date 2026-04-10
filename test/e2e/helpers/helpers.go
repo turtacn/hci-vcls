@@ -101,7 +101,8 @@ func NewTestService(cfg *config.Config) *TestApp {
 		NodeID:     cfg.Node.NodeID,
 	}
 
-	hbService := heartbeat.NewService(hbConfig, monitor, elector, evaluator, sm, m, nil)
+	mockHB := heartbeat.NewHeartbeater(hbConfig, nil)
+	hbService := heartbeat.NewService(hbConfig, mockHB, monitor, elector, evaluator, sm, m, nil)
 
 	store := vcls.NewMemoryStore()
 	vclsService := vcls.NewService(store, cfsClient, vmRepo, witClient, nil, nil, m, nil)

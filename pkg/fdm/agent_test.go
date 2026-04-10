@@ -31,6 +31,9 @@ func (m *mockElector) Close() error                       { return nil }
 func (m *mockElector) OnLeaderChange(cb func(election.LeaderInfo)) {
 	m.cb = cb
 }
+func (m *mockElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {}
+func (m *mockElector) CurrentTermAndVote() (int64, string, bool) { return 0, "", false }
+func (m *mockElector) SetNodesCount(count int) {}
 func (m *mockElector) TriggerLeaderChange(info election.LeaderInfo) {
 	if m.cb != nil {
 		m.cb(info)

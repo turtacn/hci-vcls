@@ -20,6 +20,9 @@ func (m *mockElector) Campaign(ctx context.Context) error { return nil }
 func (m *mockElector) Resign(ctx context.Context) error   { return nil }
 func (m *mockElector) Close() error                       { return nil }
 func (m *mockElector) OnLeaderChange(cb func(election.LeaderInfo)) {}
+func (m *mockElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {}
+func (m *mockElector) CurrentTermAndVote() (int64, string, bool) { return 0, "", false }
+func (m *mockElector) SetNodesCount(count int) {}
 func (m *mockElector) IsLeader() bool { return m.leader }
 func (m *mockElector) Status() election.LeaderStatus { return election.LeaderStatus{LeaderID: "node1"} }
 func (m *mockElector) Watch() <-chan election.LeaderStatus { return nil }
@@ -42,7 +45,8 @@ func TestHeartbeatService(t *testing.T) {
 		state: &fdm.ClusterState{Degradation: fdm.DegradationMinor},
 	}
 
-	svc := NewService(cfg, monitor, elector, evaluator, sm, metrics.NewNoopMetrics(), logger.Default())
+	mockHB := &heartbeaterImpl{config: cfg}
+	svc := NewService(cfg, mockHB, monitor, elector, evaluator, sm, metrics.NewNoopMetrics(), logger.Default())
 
 	// Add a summary
 	monitor.Record(Sample{NodeID: "node2", ClusterID: "cluster-1", ReceivedAt: time.Now()})
@@ -73,7 +77,8 @@ func TestHeartbeatService_NotLeader(t *testing.T) {
 	// Evaluator should not be called
 	evaluator := &mockEvaluator{state: nil}
 
-	svc := NewService(cfg, monitor, elector, evaluator, nil, nil, logger.Default())
+	mockHB := &heartbeaterImpl{config: cfg}
+	svc := NewService(cfg, mockHB, monitor, elector, evaluator, nil, nil, logger.Default())
 
 	monitor.Record(Sample{NodeID: "node2", ClusterID: "cluster-1", ReceivedAt: time.Now()})
 

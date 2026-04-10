@@ -13,6 +13,7 @@ import (
 
 type HeartbeatService struct {
 	config    HeartbeatConfig
+	heartbeater Heartbeater
 	monitor   Monitor
 	elector   election.Elector
 	evaluator fdm.Evaluator
@@ -23,19 +24,26 @@ type HeartbeatService struct {
 	cancel    context.CancelFunc
 }
 
-func NewService(config HeartbeatConfig, monitor Monitor, elector election.Elector, evaluator fdm.Evaluator, sm statemachine.Machine, m metrics.Metrics, log logger.Logger) *HeartbeatService {
+func NewService(config HeartbeatConfig, hb Heartbeater, monitor Monitor, elector election.Elector, evaluator fdm.Evaluator, sm statemachine.Machine, m metrics.Metrics, log logger.Logger) *HeartbeatService {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &HeartbeatService{
-		config:    config,
-		monitor:   monitor,
-		elector:   elector,
-		evaluator: evaluator,
-		sm:        sm,
-		metrics:   m,
-		log:       log,
-		ctx:       ctx,
-		cancel:    cancel,
+	s := &HeartbeatService{
+		config:      config,
+		heartbeater: hb,
+		monitor:     monitor,
+		elector:     elector,
+		evaluator:   evaluator,
+		sm:          sm,
+		metrics:     m,
+		log:         log,
+		ctx:         ctx,
+		cancel:      cancel,
 	}
+
+	if hb != nil {
+		hb.OnDigestReceived(s.OnDigestReceived)
+	}
+
+	return s
 }
 
 func (s *HeartbeatService) Start() error {
@@ -46,6 +54,12 @@ func (s *HeartbeatService) Start() error {
 func (s *HeartbeatService) Stop() error {
 	s.cancel()
 	return nil
+}
+
+func (s *HeartbeatService) OnDigestReceived(digest StateDigest) {
+	if s.elector != nil {
+		s.elector.ReceivePeerState(digest.NodeID, digest.Term, digest.CandidateID, digest.IsLeader)
+	}
 }
 
 func (s *HeartbeatService) loop() {
@@ -86,6 +100,12 @@ func (s *HeartbeatService) loop() {
 				} else {
 					_ = s.sm.Transition(statemachine.EventHeartbeatLost)
 				}
+			}
+
+			// Update elector digest with our state before it broadcasts via heartbeater
+			if s.elector != nil && s.heartbeater != nil {
+				term, voteFor, isLeader := s.elector.CurrentTermAndVote()
+				s.heartbeater.UpdateDigest(term, voteFor, isLeader)
 			}
 
 			// Only evaluate if leader

@@ -28,7 +28,7 @@ func TestUDPHeartbeater(t *testing.T) {
 		t.Fatalf("expected nil error on start, got %v", err)
 	}
 
-	hb.UpdateDigest(1, "node1")
+	hb.UpdateDigest(1, "node1", true)
 
 	// wait for send loop
 	time.Sleep(20 * time.Millisecond)

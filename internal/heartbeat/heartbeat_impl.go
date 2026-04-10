@@ -66,6 +66,10 @@ func (h *heartbeaterImpl) OnPeerRecovered(callback func(nodeID string)) {
 	h.recoveredCbs = append(h.recoveredCbs, callback)
 }
 
+func (h *heartbeaterImpl) OnDigestReceived(callback func(digest StateDigest)) {}
+
+func (h *heartbeaterImpl) UpdateDigest(term int64, candidateID string, isLeader bool) {}
+
 func (h *heartbeaterImpl) monitorLoop(ctx context.Context) {
 	ticker := time.NewTicker(time.Duration(h.config.IntervalMs) * time.Millisecond)
 	defer ticker.Stop()

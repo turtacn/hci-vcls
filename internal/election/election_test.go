@@ -7,12 +7,8 @@ import (
 )
 
 func TestMemoryElector(t *testing.T) {
-	// reset global state for test
-	globalLeaderLock.Lock()
-	currentLeader = ""
-	globalLeaderLock.Unlock()
-
 	e := NewMemoryElector("node-1")
+	e.SetNodesCount(1) // Single node cluster becomes leader immediately
 
 	if e.IsLeader() {
 		t.Errorf("Expected initial state to not be leader")
@@ -58,21 +54,42 @@ func TestMemoryElector(t *testing.T) {
 }
 
 func TestMemoryElector_Competition(t *testing.T) {
-	globalLeaderLock.Lock()
-	currentLeader = ""
-	globalLeaderLock.Unlock()
-
 	e1 := NewMemoryElector("node-1")
 	e2 := NewMemoryElector("node-2")
+	e3 := NewMemoryElector("node-3")
+
+	e1.SetNodesCount(3)
+	e2.SetNodesCount(3)
+	e3.SetNodesCount(3)
 
 	_ = e1.Campaign(context.Background())
-	_ = e2.Campaign(context.Background())
+
+	// node-1 campaigned, so it should have term=1, votedFor="node-1"
+	t1, v1, l1 := e1.CurrentTermAndVote()
+	if t1 != 1 || v1 != "node-1" || l1 {
+		t.Errorf("e1 unexpected term/vote/leader: %d/%s/%v", t1, v1, l1)
+	}
+
+	// Send e1's campaign state (votedFor itself) to e2 and e3
+	e2.ReceivePeerState("node-1", t1, "node-1", false)
+	e3.ReceivePeerState("node-1", t1, "node-1", false)
+
+	// e2 and e3 should have updated their term and voted for node-1
+	t2, v2, _ := e2.CurrentTermAndVote()
+	if t2 != 1 || v2 != "node-1" {
+		t.Errorf("e2 unexpected term/vote after receiving: %d/%s", t2, v2)
+	}
+
+	// feed e2 and e3's votes back to e1
+	e1.ReceivePeerState("node-2", t2, v2, false)
+	t3, v3, _ := e3.CurrentTermAndVote()
+	e1.ReceivePeerState("node-3", t3, v3, false)
 
 	if !e1.IsLeader() {
-		t.Errorf("Expected node-1 to win election")
+		t.Errorf("Expected node-1 to win election after getting votes")
 	}
 	if e2.IsLeader() {
-		t.Errorf("Expected node-2 to lose election")
+		t.Errorf("Expected node-2 to not be leader")
 	}
 }
 

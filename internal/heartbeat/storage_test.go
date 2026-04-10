@@ -26,7 +26,7 @@ func TestStorageHeartbeater(t *testing.T) {
 	}
 
 	// Update digest
-	hb.UpdateDigest(1, "node1")
+	hb.UpdateDigest(1, "node1", true)
 
 	// Wait for write loop
 	time.Sleep(30 * time.Millisecond)

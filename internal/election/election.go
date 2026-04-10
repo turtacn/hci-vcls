@@ -9,19 +9,19 @@ import (
 	"time"
 )
 
-var (
-	globalLeaderLock sync.Mutex
-	currentLeader    string
-)
-
 type memoryElector struct {
-	mu        sync.RWMutex
-	nodeID    string
-	isLeader  bool
-	term      int64
-	watcher   *Watcher
-	legacyCbs []func(LeaderInfo)
-	termFile  string
+	mu           sync.RWMutex
+	nodeID       string
+	isLeader     bool
+	leaderID     string
+	term         int64
+	votedFor     string
+	votesGranted int
+	nodesCount   int
+	watcher      *Watcher
+	legacyCbs    []func(LeaderInfo)
+	termFile     string
+	cancel       context.CancelFunc
 }
 
 var _ Elector = &memoryElector{}
@@ -33,13 +33,67 @@ func NewMemoryElector(nodeID string) *memoryElector {
 	term := loadTerm(termFile)
 
 	return &memoryElector{
-		nodeID:    nodeID,
-		term:      term,
-		watcher:   NewWatcher(),
-		legacyCbs: make([]func(LeaderInfo), 0),
-		termFile:  termFile,
+		nodeID:     nodeID,
+		term:       term,
+		watcher:    NewWatcher(),
+		legacyCbs:  make([]func(LeaderInfo), 0),
+		termFile:   termFile,
+		nodesCount: 3, // default to 3 nodes for testing if not set dynamically
 	}
 }
+
+func (e *memoryElector) SetNodesCount(count int) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.nodesCount = count
+}
+
+func (e *memoryElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	// If peer term is higher, we step down to follower
+	if peerTerm > e.term {
+		e.term = peerTerm
+		e.isLeader = false
+		e.leaderID = ""
+		e.votedFor = ""
+		e.saveTerm()
+		e.notify()
+	}
+
+	// Simple voting logic
+	// If a peer is campaigning, it votes for itself (peerVoteFor == peerNodeID)
+	if peerVoteFor == peerNodeID && peerTerm >= e.term && (e.votedFor == "" || e.votedFor == peerNodeID) {
+		// Vote for the peer
+		e.votedFor = peerNodeID
+		e.term = peerTerm
+		e.saveTerm()
+	} else if peerVoteFor == e.nodeID && peerTerm == e.term {
+		// They voted for us
+		e.votesGranted++
+		if !e.isLeader && e.votesGranted >= (e.nodesCount/2)+1 {
+			e.isLeader = true
+			e.leaderID = e.nodeID
+			e.notify()
+		}
+	}
+
+	// Track current leader if they are explicitly asserting leadership via IsLeader
+	if isLeader && peerTerm >= e.term {
+		e.leaderID = peerNodeID
+		e.term = peerTerm
+		e.isLeader = false
+		e.notify()
+	}
+}
+
+func (e *memoryElector) CurrentTermAndVote() (int64, string, bool) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.term, e.votedFor, e.isLeader
+}
+
 
 func loadTerm(file string) int64 {
 	data, err := os.ReadFile(file)
@@ -61,32 +115,35 @@ func (e *memoryElector) saveTerm() {
 }
 
 func (e *memoryElector) Campaign(ctx context.Context) error {
-	globalLeaderLock.Lock()
-	defer globalLeaderLock.Unlock()
-
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	if currentLeader == "" || currentLeader == e.nodeID {
-		currentLeader = e.nodeID
+	e.term++
+	e.votedFor = e.nodeID
+	e.votesGranted = 1
+	e.saveTerm()
+
+	// Special case for single node clusters
+	if e.nodesCount <= 1 {
 		e.isLeader = true
-		e.term++
-		e.saveTerm()
+		e.leaderID = e.nodeID
 		e.notify()
 	}
+
+	// Note: in the real system, the Elector doesn't broadcast votes itself,
+	// instead `ReceivePeerState` is triggered by Heartbeater, and Heartbeater
+	// reads the Elector's state (via CurrentTermAndVote) to broadcast.
+
 	return nil
 }
 
 func (e *memoryElector) Resign(ctx context.Context) error {
-	globalLeaderLock.Lock()
-	defer globalLeaderLock.Unlock()
-
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	if currentLeader == e.nodeID {
-		currentLeader = ""
+	if e.isLeader {
 		e.isLeader = false
+		e.leaderID = ""
 		e.notify()
 	}
 	return nil
@@ -102,7 +159,7 @@ func (e *memoryElector) Status() LeaderStatus {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 	return LeaderStatus{
-		LeaderID:  currentLeader,
+		LeaderID:  e.leaderID,
 		IsLeader:  e.isLeader,
 		Term:      e.term,
 		UpdatedAt: time.Now(),
@@ -126,7 +183,7 @@ func (e *memoryElector) OnLeaderChange(callback func(info LeaderInfo)) {
 
 func (e *memoryElector) notify() {
 	status := LeaderStatus{
-		LeaderID:  currentLeader,
+		LeaderID:  e.leaderID,
 		IsLeader:  e.isLeader,
 		Term:      e.term,
 		UpdatedAt: time.Now(),
@@ -134,7 +191,7 @@ func (e *memoryElector) notify() {
 	e.watcher.Notify(status)
 
 	info := LeaderInfo{
-		NodeID: currentLeader,
+		NodeID: e.leaderID,
 		Term:   uint64(e.term),
 	}
 	for _, cb := range e.legacyCbs {

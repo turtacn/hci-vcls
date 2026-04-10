@@ -14,6 +14,7 @@ type UDPHeartbeater struct {
 	peerStatesMu sync.RWMutex
 	deadCbs      []func(string)
 	recoveredCbs []func(string)
+	digestCbs    []func(StateDigest)
 	ctx          context.Context
 	cancel       context.CancelFunc
 	conn         *net.UDPConn
@@ -30,6 +31,7 @@ func NewUDPHeartbeater(config HeartbeatConfig) *UDPHeartbeater {
 		peerStates:   make(map[string]HeartbeatState),
 		deadCbs:      make([]func(string), 0),
 		recoveredCbs: make([]func(string), 0),
+		digestCbs:    make([]func(StateDigest), 0),
 		ctx:          ctx,
 		cancel:       cancel,
 		stateDigest: &StateDigest{
@@ -100,11 +102,16 @@ func (h *UDPHeartbeater) OnPeerRecovered(callback func(nodeID string)) {
 	h.recoveredCbs = append(h.recoveredCbs, callback)
 }
 
-func (h *UDPHeartbeater) UpdateDigest(term int64, candidateID string) {
+func (h *UDPHeartbeater) OnDigestReceived(callback func(digest StateDigest)) {
+	h.digestCbs = append(h.digestCbs, callback)
+}
+
+func (h *UDPHeartbeater) UpdateDigest(term int64, candidateID string, isLeader bool) {
 	h.digestMu.Lock()
 	defer h.digestMu.Unlock()
 	h.stateDigest.Term = term
 	h.stateDigest.CandidateID = candidateID
+	h.stateDigest.IsLeader = isLeader
 }
 
 func (h *UDPHeartbeater) receiveLoop() {
@@ -147,6 +154,10 @@ func (h *UDPHeartbeater) receiveLoop() {
 			}
 		}
 		h.peerStatesMu.Unlock()
+
+		for _, cb := range h.digestCbs {
+			cb(digest)
+		}
 	}
 }
 

@@ -89,7 +89,8 @@ func runServe(cfg *config.Config) error {
 
 	appLogger := logger.NewLogger(cfg.Log.Level, cfg.Log.Format)
 
-	hbService := heartbeat.NewService(hbConfig, monitor, elector, evaluator, sm, m, appLogger)
+	udpHeartbeater := heartbeat.NewUDPHeartbeater(hbConfig)
+	hbService := heartbeat.NewService(hbConfig, udpHeartbeater, monitor, elector, evaluator, sm, m, appLogger)
 
 	store := vcls.NewMemoryStore()
 	vclsService := vcls.NewService(store, cfsClient, vmRepo, witClient, nil, nil, m, appLogger)
