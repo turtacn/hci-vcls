@@ -56,4 +56,3 @@ message ListTasksResponse {
     repeated TaskInfo tasks = 1;
 }
 
-// Personal.AI order the ending

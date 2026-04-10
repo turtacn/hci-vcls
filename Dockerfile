@@ -19,4 +19,3 @@ EXPOSE 8080 9090
 
 ENTRYPOINT ["/app/hci-vcls"]
 
-# Personal.AI order the ending

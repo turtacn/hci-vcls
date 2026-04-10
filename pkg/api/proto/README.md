@@ -18,4 +18,3 @@ The generated `.pb.go` and `_grpc.pb.go` files will be placed in the same direct
 
 The proto package is `hcivcls` and the `go_package` option is set to `github.com/turtacn/hci-vcls/pkg/api/proto` to align with the Go module's structure.
 
-<!-- Personal.AI order the ending -->

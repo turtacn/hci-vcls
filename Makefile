@@ -38,4 +38,3 @@ coverage:
 	go test -coverprofile=coverage.out -coverpkg=./... $(shell go list ./pkg/... ./internal/... | grep -v /pkg/api/proto)
 	go tool cover -html=coverage.out
 
-# Personal.AI order the ending

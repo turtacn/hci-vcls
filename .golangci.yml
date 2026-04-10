@@ -5,4 +5,3 @@ linters:
     - govet
     - staticcheck
     - unused
-# Personal.AI order the ending
