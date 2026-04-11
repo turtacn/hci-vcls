@@ -14,3 +14,5 @@ coverage.out
 .idea/
 /ai/
 /ai/round01/
+/tools/
+/vendor/
