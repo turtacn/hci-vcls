@@ -8,6 +8,7 @@ import (
 	"github.com/turtacn/hci-vcls/internal/config"
 	"github.com/turtacn/hci-vcls/pkg/fdm"
 	"github.com/turtacn/hci-vcls/pkg/ha"
+	"github.com/turtacn/hci-vcls/pkg/mysql"
 	"github.com/turtacn/hci-vcls/pkg/vcls"
 	"go.uber.org/zap"
 )
@@ -145,4 +146,63 @@ func (m *mockExecutorErr) ExecuteWithCallback(ctx context.Context, plan *ha.Plan
 }
 func (m *mockExecutorErr) ExecuteWithPlan(ctx context.Context, planInterface interface{}) error {
 	return errors.New("executor error")
+}
+
+type mockPlanRepo struct {
+	createCalls int
+	err         error
+	lastRecord  *mysql.PlanRecord
+}
+
+func (m *mockPlanRepo) Create(ctx context.Context, plan *mysql.PlanRecord) error {
+	m.createCalls++
+	m.lastRecord = plan
+	return m.err
+}
+
+func (m *mockPlanRepo) GetByID(ctx context.Context, planID string) (*mysql.PlanRecord, error) {
+	return m.lastRecord, nil
+}
+
+func TestRunHAOnce_PersistsPlan(t *testing.T) {
+	elector := &mockElector{leader: true}
+	agent := &mockFDMAgent{level: fdm.DegradationMinor}
+	vclsService := &mockVCLS{eligible: []*vcls.VM{{ID: "vm-1"}}}
+	planner := &mockPlanner{plan: &ha.Plan{ID: "plan-2", Tasks: []ha.VMTask{{ID: "task-1"}}}}
+	executor := &mockExecutor{}
+	planRepo := &mockPlanRepo{}
+
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, planRepo, agent)
+
+	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+
+	if planRepo.createCalls != 1 {
+		t.Errorf("expected planRepo.Create to be called 1 time, got %d", planRepo.createCalls)
+	}
+	if planRepo.lastRecord == nil || planRepo.lastRecord.ID != "plan-2" {
+		t.Errorf("expected plan-2 to be persisted")
+	}
+}
+
+func TestRunHAOnce_PlanRepoFails_StillExecutes(t *testing.T) {
+	elector := &mockElector{leader: true}
+	agent := &mockFDMAgent{level: fdm.DegradationMinor}
+	vclsService := &mockVCLS{eligible: []*vcls.VM{{ID: "vm-1"}}}
+	planner := &mockPlanner{plan: &ha.Plan{ID: "plan-2", Tasks: []ha.VMTask{{ID: "task-1"}}}}
+	executor := &mockExecutor{}
+	planRepo := &mockPlanRepo{err: errors.New("db down")}
+
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, planRepo, agent)
+
+	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	if err != nil {
+		t.Fatalf("expected nil error, execution should proceed even if plan persistence fails, got %v", err)
+	}
+
+	if planRepo.createCalls != 1 {
+		t.Errorf("expected planRepo.Create to be called")
+	}
 }

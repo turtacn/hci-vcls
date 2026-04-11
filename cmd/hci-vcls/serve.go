@@ -23,6 +23,7 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/mysql"
 	"github.com/turtacn/hci-vcls/pkg/qm"
 	"github.com/turtacn/hci-vcls/pkg/statemachine"
+	"github.com/turtacn/hci-vcls/pkg/cache"
 	"github.com/turtacn/hci-vcls/pkg/vcls"
 	"github.com/turtacn/hci-vcls/pkg/witness"
 )
@@ -93,7 +94,10 @@ func runServe(cfg *config.Config) error {
 	hbService := heartbeat.NewService(hbConfig, udpHeartbeater, monitor, elector, evaluator, sm, m, appLogger)
 
 	store := vcls.NewMemoryStore()
-	vclsService := vcls.NewService(store, cfsClient, vmRepo, witClient, nil, nil, m, appLogger)
+	// NOTE(phase06): wire actual CacheManager instance here when the
+	// cmd-layer cache bootstrap is refactored. Passing nil preserves
+	// phase04 behavior (no background cache tracking).
+	vclsService := vcls.NewServiceWithCacheManager(store, cfsClient, vmRepo, witClient, nil, nil, nil, m, appLogger)
 
 	// Init true minority boot adapters if MySQL DSN is provided, else use placeholders
 	qmExecutor := qm.NewQMAdapter("/usr/sbin/qm")
@@ -110,6 +114,23 @@ func runServe(cfg *config.Config) error {
 
 	planner := ha.NewPlanner()
 	executor := ha.NewExecutor(qmClient, qmExecutor, mysqlAdapter, taskRepo, m, appLogger, cfg.HA.BatchInterval, cfg.HA.FailFast)
+
+	// Wire cache fallback path (phase05 T5) — enables minority boot path to
+	// read VM metadata from local snapshot when CFS is read-only.
+	// NOTE(phase06): wire actual CacheManager instance here when the
+	// cmd-layer cache bootstrap is refactored. Passing nil cacheManager ensures safe placeholder.
+	var cacheManager cache.CacheManager = nil
+	if cacheManager != nil {
+		if ce, ok := executor.(interface{ SetCache(c ha.CacheProvider) }); ok {
+			ce.SetCache(app.NewHACacheAdapter(cacheManager))
+		}
+	}
+
+	if sm != nil {
+		if se, ok := executor.(interface{ SetStateMachine(sm ha.StateProvider) }); ok {
+			se.SetStateMachine(app.NewStateMachineAdapter(sm))
+		}
+	}
 
 	fdmConfig := fdm.FDMConfig{
 		NodeID:          cfg.Node.NodeID,

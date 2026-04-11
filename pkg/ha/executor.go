@@ -10,15 +10,6 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/qm"
 )
 
-type cacheProvider interface {
-	GetComputeMeta(ctx context.Context, vmid string) (interface{}, error)
-}
-
-// stateProvider allows executor to query holistic cluster state without cycling imports
-type stateProvider interface {
-	CurrentLevel() string
-}
-
 type executorImpl struct {
 	qmClient      qm.Client
 	qmExecutor    qm.Executor
@@ -28,8 +19,8 @@ type executorImpl struct {
 	log           logger.Logger
 	batchInterval time.Duration
 	failFast      bool
-	cache         cacheProvider
-	stateMachine  stateProvider
+	cache         CacheProvider
+	stateMachine  StateProvider
 }
 
 var _ Executor = &executorImpl{}
@@ -47,11 +38,11 @@ func NewExecutor(qmClient qm.Client, qmExecutor qm.Executor, mysqlAdapter mysql.
 	}
 }
 
-func (e *executorImpl) SetCache(c cacheProvider) {
+func (e *executorImpl) SetCache(c CacheProvider) {
 	e.cache = c
 }
 
-func (e *executorImpl) SetStateMachine(sm stateProvider) {
+func (e *executorImpl) SetStateMachine(sm StateProvider) {
 	e.stateMachine = sm
 }
 
@@ -201,6 +192,12 @@ func (e *executorImpl) executeBatch(ctx context.Context, batchTasks []VMTask, pl
 			batchHasFailure = true
 		}
 
+		for j := range plan.Tasks {
+			if plan.Tasks[j].ID == task.ID {
+				plan.Tasks[j] = task
+			}
+		}
+
 		if onTaskDone != nil {
 			onTaskDone(task)
 		}
@@ -294,8 +291,24 @@ func (e *executorImpl) finalizeTask(ctx context.Context, tx mysql.TxAdapter, tas
 			}
 			if tx != nil {
 				// We claimed but failed to start, so rollback the claim
-				// TODO: In adapter level, tx.Rollback() should release the claim or mark it as failed if DB state was updated explicitly.
-				_ = tx.Rollback()
+				// NOTE(phase06): a cluster-level sweeper should periodically scan
+				// ha_vm_state WHERE status='booting' AND updated_at < NOW()-threshold
+				// to recover claims left stuck by Rollback infrastructure failures.
+				if rbErr := tx.Rollback(); rbErr != nil {
+					if e.log != nil {
+						e.log.Error("failed to rollback boot claim tx; claim may be stuck in booting state",
+							"vm", task.VMID, "cluster", task.ClusterID,
+							"start_err", startErr, "rollback_err", rbErr)
+					}
+					if e.metrics != nil {
+						e.metrics.IncHATaskTotal(task.ClusterID, "rollback_failed")
+					}
+				} else {
+					if e.log != nil {
+						e.log.Info("boot claim released via rollback",
+							"vm", task.VMID, "start_err", startErr)
+					}
+				}
 			}
 		}
 	} else {

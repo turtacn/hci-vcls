@@ -20,12 +20,27 @@ type serviceImpl struct {
 	repo      mysql.VMRepository
 	witness   witness.Client
 	fdmAgent  fdm.Agent
-	cache     cache.Cache[string, bool] // simple cache to debounce Refresh
-	metrics   metrics.Metrics
-	log       logger.Logger
+	cache        cache.Cache[string, bool] // simple cache to debounce Refresh
+	cacheManager cache.CacheManager        // optional; nil if not wired
+	metrics      metrics.Metrics
+	log          logger.Logger
 }
 
 var _ Service = &serviceImpl{}
+
+// NewServiceWithCacheManager is identical to NewService but additionally
+// wires a CacheManager so that Refresh can track protected VMs for
+// background cache synchronization. Pass nil cacheManager to skip.
+func NewServiceWithCacheManager(
+	store Store, cfsClient cfs.Client, repo mysql.VMRepository,
+	witness witness.Client, fdmAgent fdm.Agent,
+	cache cache.Cache[string, bool], cacheManager cache.CacheManager,
+	m metrics.Metrics, log logger.Logger,
+) Service {
+	s := NewService(store, cfsClient, repo, witness, fdmAgent, cache, m, log).(*serviceImpl)
+	s.cacheManager = cacheManager
+	return s
+}
 
 func NewService(store Store, cfsClient cfs.Client, repo mysql.VMRepository, witness witness.Client, fdmAgent fdm.Agent, cache cache.Cache[string, bool], m metrics.Metrics, log logger.Logger) Service {
 	return &serviceImpl{
@@ -128,6 +143,14 @@ func (s *serviceImpl) Refresh(ctx context.Context, clusterID string) error {
 
 		// 7. Write to store
 		s.store.Put(vm)
+
+		if s.cacheManager != nil {
+			if vm.Protected {
+				s.cacheManager.TrackVM(vm.ID)
+			} else {
+				s.cacheManager.UntrackVM(vm.ID)
+			}
+		}
 	}
 
 	if s.metrics != nil {

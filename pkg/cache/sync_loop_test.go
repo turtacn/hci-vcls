@@ -10,12 +10,17 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/metrics"
 )
 
+import "sync"
+
 type mockFailingMetaSource struct {
+	mu          sync.Mutex
 	computeMeta *VMComputeMeta
 	err         error
 }
 
 func (m *mockFailingMetaSource) FetchVMComputeMeta(ctx context.Context, vmid string) (*VMComputeMeta, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -120,8 +125,10 @@ func TestCacheManager_SyncLoop_FailureDoesNotCrash(t *testing.T) {
 	}
 
 	// Recover the source
+	source.mu.Lock()
 	source.err = nil
 	source.computeMeta = &VMComputeMeta{VMID: "100", CPUs: 2}
+	source.mu.Unlock()
 
 	time.Sleep(50 * time.Millisecond)
 

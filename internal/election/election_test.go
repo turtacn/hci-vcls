@@ -93,3 +93,31 @@ func TestMemoryElector_Competition(t *testing.T) {
 	}
 }
 
+func TestMemoryElector_RegressionT1(t *testing.T) {
+	e1 := NewMemoryElector("node-1")
+
+	e1.SetNodesCount(3)
+
+	// Become leader
+	_ = e1.Campaign(context.Background())
+	e1.ReceivePeerState("node-2", 1, "node-1", false)
+
+	if !e1.IsLeader() {
+		t.Errorf("Expected node-1 to be leader")
+	}
+
+	// Receive higher term
+	e1.ReceivePeerState("node-2", 2, "node-2", false)
+
+	if e1.IsLeader() {
+		t.Errorf("Expected node-1 to drop leadership on higher term")
+	}
+
+	term, vote, _ := e1.CurrentTermAndVote()
+	if term != 2 {
+		t.Errorf("Expected term 2, got %d", term)
+	}
+	if vote != "node-2" {
+		t.Errorf("Expected vote node-2, got %v", vote)
+	}
+}

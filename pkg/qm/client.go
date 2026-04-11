@@ -50,10 +50,12 @@ func (c *MemoryClient) StartVM(ctx context.Context, vmID, clusterID, targetHost,
 	}
 	c.tasks[taskID] = task
 
-	// Simulate async work
+	// Copy taskID to avoid capturing loop/reference variables improperly
 	go c.simulateTaskExecution(taskID)
 
-	return task, nil
+	// Return a copy to avoid races
+	taskCopy := *task
+	return &taskCopy, nil
 }
 
 func (c *MemoryClient) StopVM(ctx context.Context, vmID, clusterID string) (*Task, error) {
@@ -74,7 +76,8 @@ func (c *MemoryClient) StopVM(ctx context.Context, vmID, clusterID string) (*Tas
 
 	go c.simulateTaskExecution(taskID)
 
-	return task, nil
+	taskCopy := *task
+	return &taskCopy, nil
 }
 
 func (c *MemoryClient) GetTask(ctx context.Context, taskID string) (*Task, error) {

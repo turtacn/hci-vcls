@@ -109,12 +109,19 @@ func (s *Service) RunHAOnce(ctx context.Context, clusterID string, trigger strin
 	}
 
 	// Optional: Persist plan to repository before executing.
-	// TODO: Save to planRepo if required by idempotency goals.
-	if s.planRepo != nil {
-		// Mock mapping to mysql.HAPlan
-		// We'll skip deep persistence implementation in this step if it requires extensive mapping,
-		// but we call planRepo as a placeholder hook.
-		_ = s.planRepo // acknowledge planRepo is used
+	if s.planRepo != nil && len(plan.Tasks) > 0 {
+		if err := s.planRepo.Create(ctx, toPlanRecord(plan)); err != nil {
+			// Phase05 decision: persistence failure does not block HA execution
+			// (resilience-first, per architecture doc §3 S-04 minority boot path).
+			// NOTE(phase06): wire local plan cache to enable strong idempotency
+			// (plan persistence failure should then abort execution).
+			if s.logger != nil {
+				s.logger.Warn("failed to persist HA plan; executing anyway",
+					zap.String("plan_id", plan.ID),
+					zap.String("cluster", clusterID),
+					zap.Error(err))
+			}
+		}
 	}
 
 	err = s.executor.Execute(ctx, plan)

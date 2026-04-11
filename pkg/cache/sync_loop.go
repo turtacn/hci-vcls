@@ -55,14 +55,10 @@ func (m *cacheManagerImpl) runSyncAll() {
 }
 
 func (m *cacheManagerImpl) getVMsToSync() []string {
-	// For demonstration, retrieve all keys from compute store
-	// (Assuming the store interface can list or provide keys; if not we might need to track them).
-	// If the current interface doesn't support Listing keys, we add a TODO.
-	// TODO: Replace with an actual list of protected VMs provided by vCLS.
-
-	// Right now we don't have a direct ListKeys, so we'll just return an empty slice unless there's a mechanism.
-	// Actually, `mockStore` in manager_test.go has `List()` which implies Store has it or can have it.
-	// Let's assume we maintain a list of tracked VMs in the manager if needed, or query store.
+	// getVMsToSync returns the current snapshot of tracked VM IDs.
+	// The set is populated via TrackVM/UntrackVM, typically invoked by
+	// upstream services (e.g. vcls.Refresh) that know which VMs are
+	// under HA protection.
 
 	m.mu.RLock()
 	defer m.mu.RUnlock()

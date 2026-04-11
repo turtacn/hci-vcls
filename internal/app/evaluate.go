@@ -51,7 +51,7 @@ func toPlanRecord(plan *ha.Plan) *mysql.PlanRecord {
 		ID:          plan.ID,
 		ClusterID:   plan.ClusterID,
 		Trigger:     plan.Trigger,
-		Degradation: 0, // mock
+		Degradation: 0, // NOTE(phase06): wire actual DegradationLevel→int mapping
 		TaskCount:   len(plan.Tasks),
 		CreatedAt:   plan.CreatedAt,
 	}

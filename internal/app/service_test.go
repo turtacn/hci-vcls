@@ -13,6 +13,7 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/statemachine"
 	"github.com/turtacn/hci-vcls/pkg/vcls"
 	"go.uber.org/zap"
+	"sync/atomic"
 )
 
 type mockElector struct {
@@ -54,17 +55,17 @@ func (m *mockPlanner) BuildPlan(ctx context.Context, req ha.PlanRequest) (*ha.Pl
 }
 
 type mockExecutor struct {
-	executed bool
+	executed atomic.Bool
 }
 
 func (m *mockExecutor) Execute(ctx context.Context, plan *ha.Plan) error { return nil }
 func (m *mockExecutor) ExecuteWithCallback(ctx context.Context, plan *ha.Plan, cb func(ha.VMTask)) error {
-	m.executed = true
+	m.executed.Store(true)
 	return nil
 }
 
 func (m *mockExecutor) ExecuteWithPlan(ctx context.Context, planInterface interface{}) error {
-	m.executed = true
+	m.executed.Store(true)
 	return nil
 }
 
@@ -172,7 +173,7 @@ func TestEvaluateHA_NormalPath(t *testing.T) {
 
 	// Need to wait slightly for async executor call to register
 	time.Sleep(10 * time.Millisecond)
-	if !executor.executed {
+	if !executor.executed.Load() {
 		t.Errorf("Expected executor to be called")
 	}
 }

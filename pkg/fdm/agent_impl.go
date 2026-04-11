@@ -2,6 +2,7 @@ package fdm
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/turtacn/hci-vcls/internal/election"
@@ -23,6 +24,7 @@ type haExecutorWrapper interface {
 }
 
 type agentImpl struct {
+	mu               sync.RWMutex
 	config           FDMConfig
 	prober           Prober
 	elector          election.Elector
@@ -99,30 +101,50 @@ func (a *agentImpl) Stop() error {
 }
 
 func (a *agentImpl) NodeStates() map[string]NodeState {
-	return a.nodeStates
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	res := make(map[string]NodeState)
+	for k, v := range a.nodeStates {
+		res[k] = v
+	}
+	return res
 }
 
 func (a *agentImpl) LocalDegradationLevel() DegradationLevel {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
 	return a.degradationLevel
 }
 
 func (a *agentImpl) IsLeader() bool {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
 	return a.isLeader
 }
 
 func (a *agentImpl) LeaderNodeID() string {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
 	return a.leaderID
 }
 
 func (a *agentImpl) OnNodeFailure(callback func(nodeID string)) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	a.failureCbs = append(a.failureCbs, callback)
 }
 
 func (a *agentImpl) OnDegradationChanged(callback func(level DegradationLevel)) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	a.degradationCbs = append(a.degradationCbs, callback)
 }
 
 func (a *agentImpl) ClusterView() ClusterView {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
 	// Map string level to old int level for compat temporarily
 	var oldLevel OldDegradationLevel
 	switch a.degradationLevel {
@@ -138,9 +160,14 @@ func (a *agentImpl) ClusterView() ClusterView {
 		oldLevel = OldDegradationNone
 	}
 
+	resNodes := make(map[string]NodeState)
+	for k, v := range a.nodeStates {
+		resNodes[k] = v
+	}
+
 	return ClusterView{
 		LeaderID:         a.leaderID,
-		Nodes:            a.nodeStates,
+		Nodes:            resNodes,
 		DegradationLevel: oldLevel,
 	}
 }
@@ -218,12 +245,26 @@ func (a *agentImpl) probeLoop() {
 				}
 			}
 
+			var changed bool
+			a.mu.Lock()
 			if finalLevel != a.degradationLevel {
 				a.degradationLevel = finalLevel
+				changed = true
+			}
+			isLeader := a.isLeader
+			a.mu.Unlock()
+
+			if changed {
 				if a.metrics != nil {
 					a.metrics.SetDegradationLevel(a.config.ClusterID, float64(LevelWeight(finalLevel)))
 				}
-				for _, cb := range a.degradationCbs {
+
+				a.mu.RLock()
+				cbs := make([]func(DegradationLevel), len(a.degradationCbs))
+				copy(cbs, a.degradationCbs)
+				a.mu.RUnlock()
+
+				for _, cb := range cbs {
 					cb(finalLevel)
 				}
 			}
@@ -231,7 +272,7 @@ func (a *agentImpl) probeLoop() {
 			// In a real scenario, an orchestrator evaluates tasks. If leader, check if HA needed.
 			// Task requirement: Trigger HA Executor only if the evaluated state is NOT Isolated (Critical)
 			// Wait, the prompt says "Trigger haExecutor.Execute() only if the new state allows HA (e.g., state is not ISOLATED)"
-			if a.isLeader && a.haExecutor != nil && baseLevel == DegradationCritical && finalLevel != DegradationCritical {
+			if isLeader && a.haExecutor != nil && baseLevel == DegradationCritical && finalLevel != DegradationCritical {
 				// We detect node failure (baseLevel Critical for a node we are monitoring, or we represent FDM failure).
 				// But overall cluster state is NOT Isolated, meaning HA can proceed.
 				if a.statemachine != nil {

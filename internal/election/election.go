@@ -59,7 +59,9 @@ func (e *memoryElector) ReceivePeerState(peerNodeID string, peerTerm int64, peer
 		e.leaderID = ""
 		e.votedFor = ""
 		e.saveTerm()
+
 		e.notify()
+		// NOTE(phase06): term persistence to disk not implemented; see architecture doc §7.6
 	}
 
 	// Simple voting logic

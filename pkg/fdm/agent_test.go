@@ -9,7 +9,10 @@ import (
 	"github.com/turtacn/hci-vcls/internal/logger"
 )
 
+import "sync"
+
 type mockProber struct {
+	mu      sync.Mutex
 	results map[HeartbeatLevel]ProbeResult
 }
 
@@ -18,10 +21,17 @@ func (m *mockProber) ProbeL1(ctx context.Context) ProbeResult { return ProbeResu
 func (m *mockProber) ProbeL2(ctx context.Context) ProbeResult { return ProbeResult{} }
 
 func (m *mockProber) ProbeAll(ctx context.Context) map[HeartbeatLevel]ProbeResult {
-	return m.results
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	res := make(map[HeartbeatLevel]ProbeResult)
+	for k, v := range m.results {
+		res[k] = v
+	}
+	return res
 }
 
 type mockElector struct {
+	mu sync.RWMutex
 	cb func(election.LeaderInfo)
 }
 
@@ -29,14 +39,19 @@ func (m *mockElector) Campaign(ctx context.Context) error { return nil }
 func (m *mockElector) Resign(ctx context.Context) error   { return nil }
 func (m *mockElector) Close() error                       { return nil }
 func (m *mockElector) OnLeaderChange(cb func(election.LeaderInfo)) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.cb = cb
 }
 func (m *mockElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {}
 func (m *mockElector) CurrentTermAndVote() (int64, string, bool) { return 0, "", false }
 func (m *mockElector) SetNodesCount(count int) {}
 func (m *mockElector) TriggerLeaderChange(info election.LeaderInfo) {
-	if m.cb != nil {
-		m.cb(info)
+	m.mu.RLock()
+	cb := m.cb
+	m.mu.RUnlock()
+	if cb != nil {
+		cb(info)
 	}
 }
 func (m *mockElector) IsLeader() bool                      { return false }
@@ -109,9 +124,11 @@ func TestAgent(t *testing.T) {
 	}
 
 	// Change prober to return failures
+	prober.mu.Lock()
 	prober.results = map[HeartbeatLevel]ProbeResult{
 		HeartbeatL0: {Success: false},
 	}
+	prober.mu.Unlock()
 
 	time.Sleep(50 * time.Millisecond) // Let probe loop run
 

@@ -9,16 +9,18 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/metrics"
 )
 
+import "sync/atomic"
+
 type mockElector struct {
-	campaignCalled bool
-	resignCalled   bool
-	closeCalled    bool
+	campaignCalled atomic.Bool
+	resignCalled   atomic.Bool
+	closeCalled    atomic.Bool
 	ch             chan LeaderStatus
 }
 
-func (m *mockElector) Campaign(ctx context.Context) error { m.campaignCalled = true; return nil }
-func (m *mockElector) Resign(ctx context.Context) error   { m.resignCalled = true; return nil }
-func (m *mockElector) Close() error                       { m.closeCalled = true; return nil }
+func (m *mockElector) Campaign(ctx context.Context) error { m.campaignCalled.Store(true); return nil }
+func (m *mockElector) Resign(ctx context.Context) error   { m.resignCalled.Store(true); return nil }
+func (m *mockElector) Close() error                       { m.closeCalled.Store(true); return nil }
 func (m *mockElector) OnLeaderChange(cb func(LeaderInfo)) {}
 func (m *mockElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {}
 func (m *mockElector) CurrentTermAndVote() (int64, string, bool) { return 0, "", false }
@@ -26,12 +28,13 @@ func (m *mockElector) SetNodesCount(count int) {}
 func (m *mockElector) IsLeader() bool                     { return false }
 func (m *mockElector) Status() LeaderStatus               { return LeaderStatus{} }
 func (m *mockElector) Watch() <-chan LeaderStatus {
-	m.ch = make(chan LeaderStatus, 1)
 	return m.ch
 }
 
 func TestElectionService(t *testing.T) {
-	elector := &mockElector{}
+	elector := &mockElector{
+		ch: make(chan LeaderStatus, 1),
+	}
 	svc := NewService(elector, metrics.NewNoopMetrics(), logger.Default())
 
 	err := svc.Start()
@@ -39,7 +42,7 @@ func TestElectionService(t *testing.T) {
 		t.Fatalf("expected nil error on start, got %v", err)
 	}
 
-	if !elector.campaignCalled {
+	if !elector.campaignCalled.Load() {
 		t.Error("expected campaign to be called")
 	}
 
@@ -56,10 +59,10 @@ func TestElectionService(t *testing.T) {
 		t.Fatalf("expected nil error on stop, got %v", err)
 	}
 
-	if !elector.resignCalled {
+	if !elector.resignCalled.Load() {
 		t.Error("expected resign to be called")
 	}
-	if !elector.closeCalled {
+	if !elector.closeCalled.Load() {
 		t.Error("expected close to be called")
 	}
 }

@@ -27,5 +27,13 @@ type CacheManager interface {
 	GetHAMeta(ctx context.Context, vmid string) (*VMHAMeta, error)
 	Sync(ctx context.Context, vmid string) error
 	Stats() CacheStats
+
+	// TrackVM marks a VM ID as a sync target for the background sync loop.
+	// Safe to call concurrently.
+	TrackVM(vmid string)
+
+	// UntrackVM removes a VM ID from the sync target set.
+	// Safe to call concurrently. No-op if the VM was not tracked.
+	UntrackVM(vmid string)
 }
 
