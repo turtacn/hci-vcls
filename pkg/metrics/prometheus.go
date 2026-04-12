@@ -3,13 +3,16 @@ package metrics
 import "github.com/prometheus/client_golang/prometheus"
 
 type PrometheusMetrics struct {
-	electionTotal       *prometheus.CounterVec
-	leaderChange        *prometheus.CounterVec
-	heartbeatLost       *prometheus.CounterVec
-	degradationLevel    *prometheus.GaugeVec
-	haTaskTotal         *prometheus.CounterVec
-	haExecutionDuration *prometheus.HistogramVec
-	protectedVMCount    *prometheus.GaugeVec
+	electionTotal        *prometheus.CounterVec
+	leaderChange         *prometheus.CounterVec
+	heartbeatLost        *prometheus.CounterVec
+	degradationLevel     *prometheus.GaugeVec
+	haTaskTotal          *prometheus.CounterVec
+	haExecutionDuration  *prometheus.HistogramVec
+	protectedVMCount     *prometheus.GaugeVec
+	sweeperReleaseOK     prometheus.Counter
+	sweeperReleaseFailed prometheus.Counter
+	sweeperLastRunUnix   prometheus.Gauge
 }
 
 var _ Metrics = &PrometheusMetrics{}
@@ -44,6 +47,18 @@ func NewPrometheusMetrics(registerer prometheus.Registerer) (*PrometheusMetrics,
 			Name: "hci_protected_vm_count",
 			Help: "Current number of protected VMs",
 		}, []string{"cluster"}),
+		sweeperReleaseOK: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "hci_sweeper_release_ok_total",
+			Help: "Total number of successful sweeper releases",
+		}),
+		sweeperReleaseFailed: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "hci_sweeper_release_failed_total",
+			Help: "Total number of failed sweeper releases",
+		}),
+		sweeperLastRunUnix: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "hci_sweeper_last_run_unix",
+			Help: "Timestamp of the last sweeper run",
+		}),
 	}
 
 	if registerer != nil {
@@ -66,6 +81,15 @@ func NewPrometheusMetrics(registerer prometheus.Registerer) (*PrometheusMetrics,
 			return nil, err
 		}
 		if err := registerer.Register(m.protectedVMCount); err != nil {
+			return nil, err
+		}
+		if err := registerer.Register(m.sweeperReleaseOK); err != nil {
+			return nil, err
+		}
+		if err := registerer.Register(m.sweeperReleaseFailed); err != nil {
+			return nil, err
+		}
+		if err := registerer.Register(m.sweeperLastRunUnix); err != nil {
 			return nil, err
 		}
 	}
@@ -101,3 +125,14 @@ func (m *PrometheusMetrics) SetProtectedVMCount(cluster string, count float64) {
 	m.protectedVMCount.WithLabelValues(cluster).Set(count)
 }
 
+func (m *PrometheusMetrics) IncSweeperReleaseOK() {
+	m.sweeperReleaseOK.Inc()
+}
+
+func (m *PrometheusMetrics) IncSweeperReleaseFailed() {
+	m.sweeperReleaseFailed.Inc()
+}
+
+func (m *PrometheusMetrics) SetSweeperLastRunUnix(ts float64) {
+	m.sweeperLastRunUnix.Set(ts)
+}

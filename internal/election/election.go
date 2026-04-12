@@ -2,9 +2,6 @@ package election
 
 import (
 	"context"
-	"os"
-	"path/filepath"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -20,25 +17,42 @@ type memoryElector struct {
 	nodesCount   int
 	watcher      *Watcher
 	legacyCbs    []func(LeaderInfo)
-	termFile     string
+	termStore    TermStore
 	cancel       context.CancelFunc
+
+	saveCh chan termState
 }
 
 var _ Elector = &memoryElector{}
 
-func NewMemoryElector(nodeID string) *memoryElector {
-	termDir := "/var/lib/hci-vcls"
-	_ = os.MkdirAll(termDir, 0755)
-	termFile := filepath.Join(termDir, "hci-vcls-term-"+nodeID)
-	term := loadTerm(termFile)
+func NewMemoryElector(nodeID string, store TermStore) *memoryElector {
+	term := int64(0)
+	votedFor := ""
+	if store != nil {
+		term, votedFor, _ = store.Load()
+	}
 
-	return &memoryElector{
+	e := &memoryElector{
 		nodeID:     nodeID,
 		term:       term,
+		votedFor:   votedFor,
 		watcher:    NewWatcher(),
 		legacyCbs:  make([]func(LeaderInfo), 0),
-		termFile:   termFile,
+		termStore:  store,
 		nodesCount: 3, // default to 3 nodes for testing if not set dynamically
+		saveCh:     make(chan termState, 100),
+	}
+
+	if store != nil {
+		go e.saveLoop()
+	}
+
+	return e
+}
+
+func (e *memoryElector) saveLoop() {
+	for state := range e.saveCh {
+		_ = e.termStore.Save(state.Term, state.VotedFor)
 	}
 }
 
@@ -46,6 +60,15 @@ func (e *memoryElector) SetNodesCount(count int) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.nodesCount = count
+}
+
+func (e *memoryElector) asyncSaveTerm(term int64, votedFor string) {
+	if e.termStore != nil {
+		select {
+		case e.saveCh <- termState{Term: term, VotedFor: votedFor}:
+		default:
+		}
+	}
 }
 
 func (e *memoryElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {
@@ -58,10 +81,8 @@ func (e *memoryElector) ReceivePeerState(peerNodeID string, peerTerm int64, peer
 		e.isLeader = false
 		e.leaderID = ""
 		e.votedFor = ""
-		e.saveTerm()
-
+		e.asyncSaveTerm(e.term, e.votedFor)
 		e.notify()
-		// NOTE(phase06): term persistence to disk not implemented; see architecture doc §7.6
 	}
 
 	// Simple voting logic
@@ -70,7 +91,7 @@ func (e *memoryElector) ReceivePeerState(peerNodeID string, peerTerm int64, peer
 		// Vote for the peer
 		e.votedFor = peerNodeID
 		e.term = peerTerm
-		e.saveTerm()
+		e.asyncSaveTerm(e.term, e.votedFor)
 	} else if peerVoteFor == e.nodeID && peerTerm == e.term {
 		// They voted for us
 		e.votesGranted++
@@ -96,26 +117,6 @@ func (e *memoryElector) CurrentTermAndVote() (int64, string, bool) {
 	return e.term, e.votedFor, e.isLeader
 }
 
-
-func loadTerm(file string) int64 {
-	data, err := os.ReadFile(file)
-	if err != nil {
-		return 0
-	}
-	val, err := strconv.ParseInt(string(data), 10, 64)
-	if err != nil {
-		return 0
-	}
-	return val
-}
-
-func (e *memoryElector) saveTerm() {
-	tmpFile := e.termFile + ".tmp"
-	if err := os.WriteFile(tmpFile, []byte(strconv.FormatInt(e.term, 10)), 0644); err == nil {
-		os.Rename(tmpFile, e.termFile)
-	}
-}
-
 func (e *memoryElector) Campaign(ctx context.Context) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -123,7 +124,7 @@ func (e *memoryElector) Campaign(ctx context.Context) error {
 	e.term++
 	e.votedFor = e.nodeID
 	e.votesGranted = 1
-	e.saveTerm()
+	e.asyncSaveTerm(e.term, e.votedFor)
 
 	// Special case for single node clusters
 	if e.nodesCount <= 1 {
@@ -174,6 +175,9 @@ func (e *memoryElector) Watch() <-chan LeaderStatus {
 
 func (e *memoryElector) Close() error {
 	e.watcher.Close()
+	if e.termStore != nil {
+		close(e.saveCh)
+	}
 	return nil
 }
 
@@ -200,4 +204,3 @@ func (e *memoryElector) notify() {
 		cb(info)
 	}
 }
-

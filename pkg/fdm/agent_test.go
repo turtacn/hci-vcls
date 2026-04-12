@@ -68,6 +68,9 @@ func (m *mockMetrics) SetDegradationLevel(cluster string, level float64)        
 func (m *mockMetrics) IncHATaskTotal(cluster, status string)                      {}
 func (m *mockMetrics) ObserveHAExecutionDuration(cluster string, seconds float64) {}
 func (m *mockMetrics) SetProtectedVMCount(cluster string, count float64)          {}
+func (m *mockMetrics) IncSweeperReleaseOK()                                       {}
+func (m *mockMetrics) IncSweeperReleaseFailed()                                   {}
+func (m *mockMetrics) SetSweeperLastRunUnix(ts float64)                           {}
 
 func TestAgent(t *testing.T) {
 	log := logger.NewLogger("debug", "console")

@@ -24,5 +24,7 @@ const (
 
 	queryCreatePlan = `INSERT INTO ha_plans (id, cluster_id, trigger, degradation, task_count, created_at) VALUES (?, ?, ?, ?, ?, ?)`
 	queryGetPlan    = `SELECT * FROM ha_plans WHERE id = ?`
-)
 
+	queryListStaleBootingClaims = `SELECT vmid, token, target_node, updated_at FROM ha_vm_state WHERE status='booting' AND updated_at < ?`
+	queryReleaseStaleClaim      = `UPDATE ha_vm_state SET status='failed', reason=? WHERE vmid=? AND token=? AND status='booting'`
+)

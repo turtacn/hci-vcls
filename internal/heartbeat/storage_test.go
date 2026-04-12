@@ -11,6 +11,11 @@ import (
 func TestStorageHeartbeater(t *testing.T) {
 	dir := t.TempDir()
 
+	// Create an explicit teardown function instead of relying purely on TempDir
+	// This helps avoid Windows-like directory not empty errors if the background
+	// processes are still running during cleanup.
+	defer os.RemoveAll(dir)
+
 	cfg := HeartbeatConfig{
 		NodeID:     "node1",
 		Peers:      []string{"node2"},
@@ -56,6 +61,9 @@ func TestStorageHeartbeater(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
+
+	// Ensure goroutines fully exit before TempDir cleanup is triggered
+	time.Sleep(50 * time.Millisecond)
 }
 
 func TestStorageHeartbeater_PeerStateError(t *testing.T) {

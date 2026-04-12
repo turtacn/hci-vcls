@@ -1,7 +1,9 @@
 package mysql
 
 import (
+	"context"
 	"database/sql"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/turtacn/hci-vcls/internal/logger"
@@ -120,3 +122,41 @@ func (a *adapterImpl) Close() error {
 	return nil
 }
 
+func (a *adapterImpl) ListStaleBootingClaims(ctx context.Context, threshold time.Time) ([]BootClaim, error) {
+	rows, err := a.db.QueryContext(ctx, queryListStaleBootingClaims, threshold)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var claims []BootClaim
+	for rows.Next() {
+		var claim BootClaim
+		if err := rows.Scan(&claim.VMID, &claim.Token, &claim.TargetNode, &claim.UpdatedAt); err != nil {
+			return nil, err
+		}
+		claims = append(claims, claim)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return claims, nil
+}
+
+func (a *adapterImpl) ReleaseStaleClaim(ctx context.Context, vmid, token string, reason string) error {
+	res, err := a.db.ExecContext(ctx, queryReleaseStaleClaim, reason, vmid, token)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrOptimisticLockFailed
+	}
+
+	return nil
+}

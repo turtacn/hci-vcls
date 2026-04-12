@@ -91,7 +91,7 @@ func (m *mockFDMAgent) ClusterView() fdm.ClusterView                    { return
 
 func TestEvaluateHA_NotLeader(t *testing.T) {
 	elector := &mockElector{leader: false}
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, nil)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	_, err := s.EvaluateHA(context.Background(), "c1")
 	if err != ErrNotLeader {
@@ -102,7 +102,7 @@ func TestEvaluateHA_NotLeader(t *testing.T) {
 func TestEvaluateHA_BelowThreshold(t *testing.T) {
 	elector := &mockElector{leader: true}
 	fdmAgent := &mockFDMAgent{level: fdm.DegradationMinor}
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, fdmAgent)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, fdmAgent, nil)
 
 	_, err := s.EvaluateHA(context.Background(), "c1")
 	if err != ErrBelowThreshold {
@@ -115,7 +115,7 @@ func TestEvaluateHA_EmptyCluster(t *testing.T) {
 	fdmAgent := &mockFDMAgent{level: fdm.DegradationMajor}
 	vclsService := &mockVCLS{eligible: []*vcls.VM{}}
 
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, nil, nil, nil, nil, nil, fdmAgent)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, nil, nil, nil, nil, nil, fdmAgent, nil)
 
 	plan, err := s.EvaluateHA(context.Background(), "c1")
 	if err != nil {
@@ -150,7 +150,7 @@ func TestEvaluateHA_NormalPath(t *testing.T) {
 
 	cfg := &config.Config{HA: config.HAConfig{BatchSize: 5}}
 
-	s := NewService(cfg, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, sm, nil, planRepo, fdmAgent)
+	s := NewService(cfg, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, sm, nil, planRepo, fdmAgent, nil)
 
 	plan, err := s.EvaluateHA(context.Background(), "c1")
 	if err != nil {

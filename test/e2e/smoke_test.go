@@ -62,7 +62,7 @@ func setupFullApp(cfg *config.Config) (*app.Service, *rest.Handler, *helpers.Tes
 	taskRepo := mysql.NewMemoryHATaskRepository()
 	planRepo := mysql.NewMemoryPlanRepository()
 
-	elector := election.NewMemoryElector(cfg.Node.NodeID)
+	elector := election.NewMemoryElector(cfg.Node.NodeID, nil)
 	evaluator := fdm.NewEvaluator()
 	sm := statemachine.NewMachine()
 
@@ -84,7 +84,7 @@ func setupFullApp(cfg *config.Config) (*app.Service, *rest.Handler, *helpers.Tes
 
 	fdmAgent := &mockFDMAgent{level: fdm.DegradationNone}
 
-	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, fdmAgent)
+	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, fdmAgent, nil)
 
 	handler := rest.NewHandler(appSvc, log)
 

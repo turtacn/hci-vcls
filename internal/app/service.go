@@ -33,6 +33,7 @@ type Service struct {
 	vmRepo       mysql.VMRepository
 	planRepo     mysql.PlanRepository
 	fdmAgent     fdm.Agent
+	sweeper      ha.Sweeper
 }
 
 func NewService(
@@ -48,6 +49,7 @@ func NewService(
 	vm mysql.VMRepository,
 	plan mysql.PlanRepository,
 	fdm fdm.Agent,
+	sweeper ha.Sweeper,
 ) *Service {
 	return &Service{
 		config:       cfg,
@@ -62,6 +64,7 @@ func NewService(
 		vmRepo:       vm,
 		planRepo:     plan,
 		fdmAgent:     fdm,
+		sweeper:      sweeper,
 	}
 }
 

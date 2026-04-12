@@ -8,5 +8,7 @@ type Metrics interface {
 	IncHATaskTotal(cluster, status string)
 	ObserveHAExecutionDuration(cluster string, seconds float64)
 	SetProtectedVMCount(cluster string, count float64)
+	IncSweeperReleaseOK()
+	IncSweeperReleaseFailed()
+	SetSweeperLastRunUnix(ts float64)
 }
-

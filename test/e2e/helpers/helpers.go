@@ -89,7 +89,7 @@ func NewTestService(cfg *config.Config) *TestApp {
 	taskRepo := mysql.NewMemoryHATaskRepository()
 	planRepo := mysql.NewMemoryPlanRepository()
 
-	elector := election.NewMemoryElector(cfg.Node.NodeID)
+	elector := election.NewMemoryElector(cfg.Node.NodeID, nil)
 	evaluator := fdm.NewEvaluator()
 	sm := statemachine.NewMachine()
 
@@ -110,7 +110,7 @@ func NewTestService(cfg *config.Config) *TestApp {
 	planner := ha.NewPlanner()
 	executor := ha.NewExecutor(qmClient, nil, nil, taskRepo, m, nil, 0, cfg.HA.FailFast)
 
-	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, nil)
+	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, nil, nil)
 
 	return &TestApp{
 		Service:   appSvc,

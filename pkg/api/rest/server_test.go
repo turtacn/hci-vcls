@@ -40,7 +40,7 @@ func setupTestRouter() (*gin.Engine, *app.Service) {
 	cfg := &config.Config{}
 	cfg.Node.ClusterID = "test-cluster"
 
-	elector := election.NewMemoryElector("test-node")
+	elector := election.NewMemoryElector("test-node", nil)
 	elector.SetNodesCount(1) // Single node cluster becomes leader immediately
 	_ = elector.Campaign(context.Background())
 	m := metrics.NewNoopMetrics()
@@ -51,7 +51,7 @@ func setupTestRouter() (*gin.Engine, *app.Service) {
 
 	fdmAgent := &mockAgent{}
 
-	svc := app.NewService(cfg, log, m, elector, nil, nil, nil, nil, sm, vmRepo, planRepo, fdmAgent)
+	svc := app.NewService(cfg, log, m, elector, nil, nil, nil, nil, sm, vmRepo, planRepo, fdmAgent, nil)
 
 	handler := NewHandler(svc, log)
 	router := gin.Default()

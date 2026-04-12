@@ -284,3 +284,10 @@ func TestExecutor_Execute_CtxCancel(t *testing.T) {
 		t.Errorf("expected leadership lost due to context cancellation, got %v", err)
 	}
 }
+
+func (m *mockMySQLAdapter) ListStaleBootingClaims(ctx context.Context, threshold time.Time) ([]mysql.BootClaim, error) {
+	return nil, nil
+}
+func (m *mockMySQLAdapter) ReleaseStaleClaim(ctx context.Context, vmid, token string, reason string) error {
+	return nil
+}

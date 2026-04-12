@@ -41,6 +41,7 @@ type BootClaim struct {
 	VMID       string
 	Token      string
 	TargetNode string
+	UpdatedAt  time.Time
 }
 
 type MySQLStatus struct {
@@ -103,4 +104,3 @@ type PlanRecord struct {
 	TaskCount   int
 	CreatedAt   time.Time
 }
-

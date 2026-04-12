@@ -15,7 +15,7 @@ import (
 
 func TestRunHAOnce_NotLeader(t *testing.T) {
 	elector := &mockElector{leader: false}
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, nil)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
 	if !errors.Is(err, ErrNotLeader) {
@@ -29,7 +29,7 @@ func TestRunHAOnce_NotLeader(t *testing.T) {
 func TestRunHAOnce_CriticalDegradation(t *testing.T) {
 	elector := &mockElector{leader: true}
 	agent := &mockFDMAgent{level: fdm.DegradationCritical}
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, agent)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, agent, nil)
 
 	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
 	if !errors.Is(err, ErrBelowThreshold) {
@@ -44,7 +44,7 @@ func TestRunHAOnce_NoEligibleVMs(t *testing.T) {
 	elector := &mockElector{leader: true}
 	agent := &mockFDMAgent{level: fdm.DegradationMajor}
 	vclsService := &mockVCLS{eligible: []*vcls.VM{}}
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, nil, nil, nil, nil, nil, agent)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, nil, nil, nil, nil, nil, agent, nil)
 
 	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
 	if err != nil {
@@ -60,7 +60,7 @@ func TestRunHAOnce_PlannerFails(t *testing.T) {
 	agent := &mockFDMAgent{level: fdm.DegradationMajor}
 	vclsService := &mockVCLS{eligible: []*vcls.VM{{ID: "vm-1"}}}
 	planner := &mockPlannerErr{}
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, nil, nil, nil, nil, agent)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, nil, nil, nil, nil, agent, nil)
 
 	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
 	if err == nil {
@@ -76,7 +76,7 @@ func TestRunHAOnce_EmptyPlan(t *testing.T) {
 	agent := &mockFDMAgent{level: fdm.DegradationMajor}
 	vclsService := &mockVCLS{eligible: []*vcls.VM{{ID: "vm-1"}}}
 	planner := &mockPlanner{plan: &ha.Plan{}} // empty tasks
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, nil, nil, nil, nil, agent)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, nil, nil, nil, nil, agent, nil)
 
 	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
 	if err != nil {
@@ -93,7 +93,7 @@ func TestRunHAOnce_ExecutorFails(t *testing.T) {
 	vclsService := &mockVCLS{eligible: []*vcls.VM{{ID: "vm-1"}}}
 	planner := &mockPlanner{plan: &ha.Plan{ID: "plan-1", Tasks: []ha.VMTask{{ID: "task-1"}}}}
 	executor := &mockExecutorErr{}
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, nil, agent)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, nil, agent, nil)
 
 	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
 	if err == nil {
@@ -115,7 +115,7 @@ func TestRunHAOnce_Success(t *testing.T) {
 	vclsService := &mockVCLS{eligible: []*vcls.VM{{ID: "vm-1"}}}
 	planner := &mockPlanner{plan: &ha.Plan{ID: "plan-2", Tasks: []ha.VMTask{{ID: "task-1"}}}}
 	executor := &mockExecutor{}
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, nil, agent)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, nil, agent, nil)
 
 	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
 	if err != nil {
@@ -172,7 +172,7 @@ func TestRunHAOnce_PersistsPlan(t *testing.T) {
 	executor := &mockExecutor{}
 	planRepo := &mockPlanRepo{}
 
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, planRepo, agent)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, planRepo, agent, nil)
 
 	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
 	if err != nil {
@@ -195,7 +195,7 @@ func TestRunHAOnce_PlanRepoFails_StillExecutes(t *testing.T) {
 	executor := &mockExecutor{}
 	planRepo := &mockPlanRepo{err: errors.New("db down")}
 
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, planRepo, agent)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, planRepo, agent, nil)
 
 	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
 	if err != nil {

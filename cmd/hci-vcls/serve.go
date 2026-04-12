@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
@@ -76,7 +77,11 @@ func runServe(cfg *config.Config) error {
 	taskRepo := mysql.NewMemoryHATaskRepository()
 	planRepo := mysql.NewMemoryPlanRepository()
 
-	elector := election.NewMemoryElector(cfg.Node.NodeID)
+	termStore, err := election.NewGobTermStore("/var/lib/hci-vcls/election/term.gob")
+	if err != nil {
+		return fmt.Errorf("failed to initialize term store: %v", err)
+	}
+	elector := election.NewMemoryElector(cfg.Node.NodeID, termStore)
 
 	monitor := heartbeat.NewMemoryMonitor()
 	evaluator := fdm.NewEvaluator()
@@ -139,7 +144,21 @@ func runServe(cfg *config.Config) error {
 	}
 	fdmAgent := fdm.NewAgent(fdmConfig, &dummyProber{}, elector, appLogger, m)
 
-	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, fdmAgent)
+	sweeperConfig := ha.SweeperConfig{
+		StaleThreshold: 10 * time.Minute,
+		ScanInterval:   2 * time.Minute,
+	}
+	isLeaderFunc := func() bool {
+		return fdmAgent.IsLeader()
+	}
+	sweeper := ha.NewSweeper(sweeperConfig, mysqlAdapter, isLeaderFunc, m, appLogger)
+
+	// Start the sweeper in background
+	if err := sweeper.Start(context.Background()); err != nil {
+		log.Error("Failed to start sweeper", zap.Error(err))
+	}
+
+	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, fdmAgent, sweeper)
 
 	handler := rest.NewHandler(appSvc, log)
 	restServer := rest.NewServer(cfg.Server.HTTPAddr, handler)

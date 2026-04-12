@@ -7,7 +7,7 @@ import (
 )
 
 func TestMemoryElector(t *testing.T) {
-	e := NewMemoryElector("node-1")
+	e := NewMemoryElector("node-1", nil)
 	e.SetNodesCount(1) // Single node cluster becomes leader immediately
 
 	if e.IsLeader() {
@@ -54,9 +54,9 @@ func TestMemoryElector(t *testing.T) {
 }
 
 func TestMemoryElector_Competition(t *testing.T) {
-	e1 := NewMemoryElector("node-1")
-	e2 := NewMemoryElector("node-2")
-	e3 := NewMemoryElector("node-3")
+	e1 := NewMemoryElector("node-1", nil)
+	e2 := NewMemoryElector("node-2", nil)
+	e3 := NewMemoryElector("node-3", nil)
 
 	e1.SetNodesCount(3)
 	e2.SetNodesCount(3)
@@ -94,7 +94,7 @@ func TestMemoryElector_Competition(t *testing.T) {
 }
 
 func TestMemoryElector_RegressionT1(t *testing.T) {
-	e1 := NewMemoryElector("node-1")
+	e1 := NewMemoryElector("node-1", nil)
 
 	e1.SetNodesCount(3)
 
