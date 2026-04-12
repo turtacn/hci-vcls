@@ -291,9 +291,6 @@ func (e *executorImpl) finalizeTask(ctx context.Context, tx mysql.TxAdapter, tas
 			}
 			if tx != nil {
 				// We claimed but failed to start, so rollback the claim
-				// NOTE(phase06): a cluster-level sweeper should periodically scan
-				// ha_vm_state WHERE status='booting' AND updated_at < NOW()-threshold
-				// to recover claims left stuck by Rollback infrastructure failures.
 				if rbErr := tx.Rollback(); rbErr != nil {
 					if e.log != nil {
 						e.log.Error("failed to rollback boot claim tx; claim may be stuck in booting state",
