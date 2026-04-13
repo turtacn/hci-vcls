@@ -11,4 +11,7 @@ type Metrics interface {
 	IncSweeperReleaseOK()
 	IncSweeperReleaseFailed()
 	SetSweeperLastRunUnix(ts float64)
+	IncStateMachineTransition(from, to, event string)
+	SetStateMachineCurrentState(state string)
+	ObserveEvaluationDuration(seconds float64)
 }

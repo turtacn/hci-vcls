@@ -39,7 +39,7 @@ func TestHeartbeatService(t *testing.T) {
 	cfg := HeartbeatConfig{IntervalMs: 10, TimeoutMs: 20}
 	monitor := NewMemoryMonitor()
 	elector := &mockElector{leader: true}
-	sm := statemachine.NewMachine()
+	sm := statemachine.NewMachine(nil)
 
 	evaluator := &mockEvaluator{
 		state: &fdm.ClusterState{Degradation: fdm.DegradationMinor},

@@ -24,3 +24,6 @@ type Executor interface {
 	ExecuteWithPlan(ctx context.Context, planInterface interface{}) error
 }
 
+type AuditSink interface {
+	LogHADecision(ctx context.Context, clusterID, vmid, planID, bootPath, sourceHost, targetHost, reason, degradation, outcome, errStr string) error
+}

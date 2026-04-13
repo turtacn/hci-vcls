@@ -45,13 +45,13 @@ func setupTestRouter() (*gin.Engine, *app.Service) {
 	_ = elector.Campaign(context.Background())
 	m := metrics.NewNoopMetrics()
 
-	sm := statemachine.NewMachine()
+	sm := statemachine.NewMachine(nil)
 	vmRepo := mysql.NewMemoryVMRepository()
 	planRepo := mysql.NewMemoryPlanRepository()
 
 	fdmAgent := &mockAgent{}
 
-	svc := app.NewService(cfg, log, m, elector, nil, nil, nil, nil, sm, vmRepo, planRepo, fdmAgent, nil)
+	svc := app.NewService(cfg, log, m, elector, nil, nil, nil, nil, sm, vmRepo, planRepo, fdmAgent, nil, nil)
 
 	handler := NewHandler(svc, log)
 	router := gin.Default()

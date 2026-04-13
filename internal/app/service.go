@@ -34,6 +34,7 @@ type Service struct {
 	planRepo     mysql.PlanRepository
 	fdmAgent     fdm.Agent
 	sweeper      ha.Sweeper
+	planCache    PlanCache
 }
 
 func NewService(
@@ -50,8 +51,9 @@ func NewService(
 	plan mysql.PlanRepository,
 	fdm fdm.Agent,
 	sweeper ha.Sweeper,
+	planCache PlanCache,
 ) *Service {
-	return &Service{
+	s := &Service{
 		config:       cfg,
 		logger:       log,
 		metrics:      m,
@@ -65,7 +67,18 @@ func NewService(
 		planRepo:     plan,
 		fdmAgent:     fdm,
 		sweeper:      sweeper,
+		planCache:    planCache,
 	}
+
+	if planCache != nil {
+		if pending, err := planCache.List(); err == nil && len(pending) > 0 {
+			if log != nil {
+				log.Warn("Found pending plans in cache that were not executed cleanly", zap.Int("count", len(pending)))
+			}
+		}
+	}
+
+	return s
 }
 
 func (s *Service) Planner() ha.Planner {
@@ -75,4 +88,3 @@ func (s *Service) Planner() ha.Planner {
 func (s *Service) Executor() ha.Executor {
 	return s.executor
 }
-

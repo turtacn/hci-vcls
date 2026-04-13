@@ -108,22 +108,29 @@ func (s *Service) RunHAOnce(ctx context.Context, clusterID string, trigger strin
 		}, nil
 	}
 
-	// Optional: Persist plan to repository before executing.
-	if s.planRepo != nil && len(plan.Tasks) > 0 {
-		if err := s.planRepo.Create(ctx, toPlanRecord(plan)); err != nil {
-			// Phase05 decision: persistence failure does not block HA execution
-			// (resilience-first, per architecture doc §3 S-04 minority boot path).
-			// NOTE(phase06): wire local plan cache to enable strong idempotency
-			// (plan persistence failure should then abort execution).
-			if s.logger != nil {
-				s.logger.Warn("failed to persist HA plan; executing anyway",
-					zap.String("plan_id", plan.ID),
-					zap.String("cluster", clusterID),
-					zap.Error(err))
+	if len(plan.Tasks) > 0 {
+		// Three-step commit protocol for plan persistence:
+		// 1. Write local plan cache (strong idempotency). Fails execution if this fails.
+		if s.planCache != nil {
+			if err := s.planCache.Put(plan); err != nil {
+				return nil, fmt.Errorf("failed to persist local plan cache: %w", err)
+			}
+		}
+
+		// 2. Write to MySQL plan repository (informational/audit, non-blocking).
+		if s.planRepo != nil {
+			if err := s.planRepo.Create(ctx, toPlanRecord(plan)); err != nil {
+				if s.logger != nil {
+					s.logger.Warn("failed to persist HA plan to DB; executing anyway",
+						zap.String("plan_id", plan.ID),
+						zap.String("cluster", clusterID),
+						zap.Error(err))
+				}
 			}
 		}
 	}
 
+	// 3. Execute
 	err = s.executor.Execute(ctx, plan)
 	if err != nil {
 		return &RunHAResult{
@@ -131,6 +138,11 @@ func (s *Service) RunHAOnce(ctx context.Context, clusterID string, trigger strin
 			TaskCount: len(plan.Tasks),
 			Reason:    "Executor failed to complete the plan",
 		}, fmt.Errorf("executor failed: %w", err)
+	}
+
+	// 4. Clean up local plan cache after successful execution
+	if s.planCache != nil && len(plan.Tasks) > 0 {
+		_ = s.planCache.Delete(plan.ID)
 	}
 
 	if s.logger != nil {

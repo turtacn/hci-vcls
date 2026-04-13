@@ -21,6 +21,7 @@ type executorImpl struct {
 	failFast      bool
 	cache         CacheProvider
 	stateMachine  StateProvider
+	auditSink     AuditSink
 }
 
 var _ Executor = &executorImpl{}
@@ -44,6 +45,10 @@ func (e *executorImpl) SetCache(c CacheProvider) {
 
 func (e *executorImpl) SetStateMachine(sm StateProvider) {
 	e.stateMachine = sm
+}
+
+func (e *executorImpl) SetAudit(a AuditSink) {
+	e.auditSink = a
 }
 
 // ExecuteWithPlan handles untyped plan interface to avoid dependency loops from fdm agent mock calls
@@ -133,8 +138,6 @@ func (e *executorImpl) getCurrentLevel(plan *Plan) string {
 }
 
 func (e *executorImpl) validateExecutionGate(plan *Plan, level string) error {
-	// Refactored to not strictly use magic strings if possible, but currently we receive level as string.
-	// Assume "Critical" maps to Isolated.
 	if level == "Critical" {
 		if e.log != nil {
 			e.log.Warn("HA execution skipped: cluster degradation level is Critical (Isolated)", "cluster", plan.ClusterID)
@@ -179,15 +182,13 @@ func (e *executorImpl) executeBatch(ctx context.Context, batchTasks []VMTask, pl
 		meta, metaErr := e.loadCachedMeta(ctx, &task)
 		if metaErr != nil && e.log != nil {
 			e.log.Warn("Failed to read from cache during fallback", "vm", task.VMID, "error", metaErr)
-			// Decide if cache miss is terminal or not. For now, log warning and proceed (might fail qm start if meta is critical).
-			// If meta is strictly required for this boot path, we could fail early here.
 		}
 
 		// 3. Start VM via QM
 		err := e.startVM(ctx, &task, meta)
 
 		// 4. Finalize Task (Handle idempotency and errors)
-		terminalErr := e.finalizeTask(ctx, tx, &task, err)
+		terminalErr := e.finalizeTask(ctx, tx, plan, &task, err, currentLevel)
 		if terminalErr != nil {
 			batchHasFailure = true
 		}
@@ -254,65 +255,84 @@ func (e *executorImpl) claimBoot(ctx context.Context, task *VMTask, plan *Plan, 
 }
 
 func (e *executorImpl) loadCachedMeta(ctx context.Context, task *VMTask) (interface{}, error) {
-	// If path relies on minority or cache
 	if task.BootPath == BootPathMinority && e.cache != nil {
 		meta, err := e.cache.GetComputeMeta(ctx, task.VMID)
-		// In a complete implementation, store meta into some struct expected by qm
 		return meta, err
 	}
 	return nil, nil
 }
 
 func (e *executorImpl) startVM(ctx context.Context, task *VMTask, meta interface{}) error {
-	// Assuming StartVM doesn't accept meta yet, we pass what we can
 	_, err := e.qmClient.StartVM(ctx, task.VMID, task.ClusterID, task.TargetHost, string(task.BootPath))
 	return err
 }
 
-func (e *executorImpl) finalizeTask(ctx context.Context, tx mysql.TxAdapter, task *VMTask, startErr error) error {
+func (e *executorImpl) finalizeTask(ctx context.Context, tx mysql.TxAdapter, plan *Plan, task *VMTask, startErr error, currentLevel string) error {
+	var errStr string
 	if startErr != nil {
-		// Idempotency: "already running" is considered success
+		errStr = startErr.Error()
+	}
+
+	var retErr error
+	if startErr != nil {
 		if startErr == qm.ErrVMAlreadyRunning {
-			task.Status = TaskDone
-			task.Reason = "already running"
-			if e.log != nil {
-				e.log.Info("VM already running, treating as success", "vm", task.VMID)
-			}
-			if tx != nil {
-				_ = tx.Commit() // we successfully claimed and it's running
-			}
+			retErr = e.treatAsAlreadyRunning(ctx, tx, task)
 		} else {
-			// Failure
-			task.Status = TaskFailed
-			task.Reason = startErr.Error()
-			task.RetryCount++
-			if e.log != nil {
-				e.log.Error("Failed to start VM via QM", "vm", task.VMID, "error", startErr)
-			}
-			if tx != nil {
-				// We claimed but failed to start, so rollback the claim
-				if rbErr := tx.Rollback(); rbErr != nil {
-					if e.log != nil {
-						e.log.Error("failed to rollback boot claim tx; claim may be stuck in booting state",
-							"vm", task.VMID, "cluster", task.ClusterID,
-							"start_err", startErr, "rollback_err", rbErr)
-					}
-					if e.metrics != nil {
-						e.metrics.IncHATaskTotal(task.ClusterID, "rollback_failed")
-					}
-				} else {
-					if e.log != nil {
-						e.log.Info("boot claim released via rollback",
-							"vm", task.VMID, "start_err", startErr)
-					}
-				}
-			}
+			retErr = e.handleStartError(ctx, tx, task, startErr)
 		}
 	} else {
-		task.Status = TaskDone
-		task.Reason = "success"
-		if tx != nil {
-			_ = tx.Commit()
+		retErr = e.handleStartSuccess(ctx, tx, task)
+	}
+
+	if e.auditSink != nil {
+		outcome := "success"
+		if task.Status == TaskFailed {
+			outcome = "failure"
+		}
+		_ = e.auditSink.LogHADecision(ctx, task.ClusterID, task.VMID, plan.ID, string(task.BootPath), task.SourceHost, task.TargetHost, task.Reason, currentLevel, outcome, errStr)
+	}
+
+	return retErr
+}
+
+func (e *executorImpl) handleStartSuccess(ctx context.Context, tx mysql.TxAdapter, task *VMTask) error {
+	task.Status = TaskDone
+	task.Reason = "success"
+	if tx != nil {
+		_ = tx.Commit()
+	}
+
+	e.updateTaskStatus(ctx, task.ID, task.Status)
+
+	if e.metrics != nil {
+		e.metrics.IncHATaskTotal(task.ClusterID, string(task.Status))
+	}
+
+	return nil
+}
+
+func (e *executorImpl) handleStartError(ctx context.Context, tx mysql.TxAdapter, task *VMTask, startErr error) error {
+	task.Status = TaskFailed
+	task.Reason = startErr.Error()
+	task.RetryCount++
+	if e.log != nil {
+		e.log.Error("Failed to start VM via QM", "vm", task.VMID, "error", startErr)
+	}
+	if tx != nil {
+		if rbErr := tx.Rollback(); rbErr != nil {
+			if e.log != nil {
+				e.log.Error("failed to rollback boot claim tx; claim may be stuck in booting state",
+					"vm", task.VMID, "cluster", task.ClusterID,
+					"start_err", startErr, "rollback_err", rbErr)
+			}
+			if e.metrics != nil {
+				e.metrics.IncHATaskTotal(task.ClusterID, "rollback_failed")
+			}
+		} else {
+			if e.log != nil {
+				e.log.Info("boot claim released via rollback",
+					"vm", task.VMID, "start_err", startErr)
+			}
 		}
 	}
 
@@ -322,9 +342,25 @@ func (e *executorImpl) finalizeTask(ctx context.Context, tx mysql.TxAdapter, tas
 		e.metrics.IncHATaskTotal(task.ClusterID, string(task.Status))
 	}
 
-	if task.Status == TaskFailed {
-		return startErr
+	return startErr
+}
+
+func (e *executorImpl) treatAsAlreadyRunning(ctx context.Context, tx mysql.TxAdapter, task *VMTask) error {
+	task.Status = TaskDone
+	task.Reason = "already running"
+	if e.log != nil {
+		e.log.Info("VM already running, treating as success", "vm", task.VMID)
 	}
+	if tx != nil {
+		_ = tx.Commit() // we successfully claimed and it's running
+	}
+
+	e.updateTaskStatus(ctx, task.ID, task.Status)
+
+	if e.metrics != nil {
+		e.metrics.IncHATaskTotal(task.ClusterID, string(task.Status))
+	}
+
 	return nil
 }
 

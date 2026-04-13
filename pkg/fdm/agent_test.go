@@ -71,6 +71,9 @@ func (m *mockMetrics) SetProtectedVMCount(cluster string, count float64)        
 func (m *mockMetrics) IncSweeperReleaseOK()                                       {}
 func (m *mockMetrics) IncSweeperReleaseFailed()                                   {}
 func (m *mockMetrics) SetSweeperLastRunUnix(ts float64)                           {}
+func (m *mockMetrics) IncStateMachineTransition(from, to, event string)           {}
+func (m *mockMetrics) SetStateMachineCurrentState(state string)                   {}
+func (m *mockMetrics) ObserveEvaluationDuration(seconds float64)                  {}
 
 func TestAgent(t *testing.T) {
 	log := logger.NewLogger("debug", "console")

@@ -3,16 +3,19 @@ package metrics
 import "github.com/prometheus/client_golang/prometheus"
 
 type PrometheusMetrics struct {
-	electionTotal        *prometheus.CounterVec
-	leaderChange         *prometheus.CounterVec
-	heartbeatLost        *prometheus.CounterVec
-	degradationLevel     *prometheus.GaugeVec
-	haTaskTotal          *prometheus.CounterVec
-	haExecutionDuration  *prometheus.HistogramVec
-	protectedVMCount     *prometheus.GaugeVec
-	sweeperReleaseOK     prometheus.Counter
-	sweeperReleaseFailed prometheus.Counter
-	sweeperLastRunUnix   prometheus.Gauge
+	electionTotal            *prometheus.CounterVec
+	leaderChange             *prometheus.CounterVec
+	heartbeatLost            *prometheus.CounterVec
+	degradationLevel         *prometheus.GaugeVec
+	haTaskTotal              *prometheus.CounterVec
+	haExecutionDuration      *prometheus.HistogramVec
+	protectedVMCount         *prometheus.GaugeVec
+	sweeperReleaseOK         prometheus.Counter
+	sweeperReleaseFailed     prometheus.Counter
+	sweeperLastRunUnix       prometheus.Gauge
+	stateMachineTransition   *prometheus.CounterVec
+	stateMachineCurrentState *prometheus.GaugeVec
+	evaluationDuration       prometheus.Histogram
 }
 
 var _ Metrics = &PrometheusMetrics{}
@@ -59,6 +62,18 @@ func NewPrometheusMetrics(registerer prometheus.Registerer) (*PrometheusMetrics,
 			Name: "hci_sweeper_last_run_unix",
 			Help: "Timestamp of the last sweeper run",
 		}),
+		stateMachineTransition: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "hci_statemachine_transition_total",
+			Help: "Total number of state machine transitions",
+		}, []string{"from", "to", "event"}),
+		stateMachineCurrentState: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "hci_statemachine_current_state",
+			Help: "Current state of the state machine (gauge string labeled)",
+		}, []string{"state"}),
+		evaluationDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Name: "hci_evaluation_duration_seconds",
+			Help: "Duration of FDM agent evaluations in seconds",
+		}),
 	}
 
 	if registerer != nil {
@@ -90,6 +105,15 @@ func NewPrometheusMetrics(registerer prometheus.Registerer) (*PrometheusMetrics,
 			return nil, err
 		}
 		if err := registerer.Register(m.sweeperLastRunUnix); err != nil {
+			return nil, err
+		}
+		if err := registerer.Register(m.stateMachineTransition); err != nil {
+			return nil, err
+		}
+		if err := registerer.Register(m.stateMachineCurrentState); err != nil {
+			return nil, err
+		}
+		if err := registerer.Register(m.evaluationDuration); err != nil {
 			return nil, err
 		}
 	}
@@ -135,4 +159,16 @@ func (m *PrometheusMetrics) IncSweeperReleaseFailed() {
 
 func (m *PrometheusMetrics) SetSweeperLastRunUnix(ts float64) {
 	m.sweeperLastRunUnix.Set(ts)
+}
+
+func (m *PrometheusMetrics) IncStateMachineTransition(from, to, event string) {
+	m.stateMachineTransition.WithLabelValues(from, to, event).Inc()
+}
+
+func (m *PrometheusMetrics) SetStateMachineCurrentState(state string) {
+	m.stateMachineCurrentState.WithLabelValues(state).Set(1)
+}
+
+func (m *PrometheusMetrics) ObserveEvaluationDuration(seconds float64) {
+	m.evaluationDuration.Observe(seconds)
 }

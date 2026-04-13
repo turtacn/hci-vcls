@@ -29,9 +29,10 @@ func (m *mockElector) Resign(ctx context.Context) error                       { 
 func (m *mockElector) Watch() <-chan election.LeaderStatus                    { return nil }
 func (m *mockElector) Close() error                                           { return nil }
 func (m *mockElector) OnLeaderChange(callback func(info election.LeaderInfo)) {}
-func (m *mockElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {}
+func (m *mockElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {
+}
 func (m *mockElector) CurrentTermAndVote() (int64, string, bool) { return 0, "", false }
-func (m *mockElector) SetNodesCount(count int) {}
+func (m *mockElector) SetNodesCount(count int)                   {}
 
 type mockVCLS struct {
 	eligible []*vcls.VM
@@ -85,13 +86,13 @@ func (m *mockFDMAgent) NodeStates() map[string]fdm.NodeState {
 	}
 	return map[string]fdm.NodeState{}
 }
-func (m *mockFDMAgent) IsLeader() bool                                  { return true }
-func (m *mockFDMAgent) LeaderNodeID() string                            { return "node1" }
-func (m *mockFDMAgent) ClusterView() fdm.ClusterView                    { return fdm.ClusterView{} }
+func (m *mockFDMAgent) IsLeader() bool               { return true }
+func (m *mockFDMAgent) LeaderNodeID() string         { return "node1" }
+func (m *mockFDMAgent) ClusterView() fdm.ClusterView { return fdm.ClusterView{} }
 
 func TestEvaluateHA_NotLeader(t *testing.T) {
 	elector := &mockElector{leader: false}
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	_, err := s.EvaluateHA(context.Background(), "c1")
 	if err != ErrNotLeader {
@@ -102,7 +103,7 @@ func TestEvaluateHA_NotLeader(t *testing.T) {
 func TestEvaluateHA_BelowThreshold(t *testing.T) {
 	elector := &mockElector{leader: true}
 	fdmAgent := &mockFDMAgent{level: fdm.DegradationMinor}
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, fdmAgent, nil)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, fdmAgent, nil, nil)
 
 	_, err := s.EvaluateHA(context.Background(), "c1")
 	if err != ErrBelowThreshold {
@@ -115,7 +116,7 @@ func TestEvaluateHA_EmptyCluster(t *testing.T) {
 	fdmAgent := &mockFDMAgent{level: fdm.DegradationMajor}
 	vclsService := &mockVCLS{eligible: []*vcls.VM{}}
 
-	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, nil, nil, nil, nil, nil, fdmAgent, nil)
+	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, nil, nil, nil, nil, nil, fdmAgent, nil, nil)
 
 	plan, err := s.EvaluateHA(context.Background(), "c1")
 	if err != nil {
@@ -141,7 +142,7 @@ func TestEvaluateHA_NormalPath(t *testing.T) {
 	planner := &mockPlanner{plan: expectedPlan}
 
 	executor := &mockExecutor{}
-	sm := statemachine.NewMachine()
+	sm := statemachine.NewMachine(nil)
 	_ = sm.Transition(statemachine.EventHeartbeatRestored) // to Stable
 	_ = sm.Transition(statemachine.EventHeartbeatLost)     // to Degraded
 	_ = sm.Transition(statemachine.EventEvaluationStarted) // to Evaluating
@@ -150,7 +151,7 @@ func TestEvaluateHA_NormalPath(t *testing.T) {
 
 	cfg := &config.Config{HA: config.HAConfig{BatchSize: 5}}
 
-	s := NewService(cfg, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, sm, nil, planRepo, fdmAgent, nil)
+	s := NewService(cfg, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, sm, nil, planRepo, fdmAgent, nil, nil)
 
 	plan, err := s.EvaluateHA(context.Background(), "c1")
 	if err != nil {
@@ -177,4 +178,3 @@ func TestEvaluateHA_NormalPath(t *testing.T) {
 		t.Errorf("Expected executor to be called")
 	}
 }
-

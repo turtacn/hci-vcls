@@ -19,3 +19,7 @@ func (m *NoopMetrics) SetProtectedVMCount(cluster string, count float64)        
 func (m *NoopMetrics) IncSweeperReleaseOK()             {}
 func (m *NoopMetrics) IncSweeperReleaseFailed()         {}
 func (m *NoopMetrics) SetSweeperLastRunUnix(ts float64) {}
+
+func (m *NoopMetrics) IncStateMachineTransition(from, to, event string) {}
+func (m *NoopMetrics) SetStateMachineCurrentState(state string)         {}
+func (m *NoopMetrics) ObserveEvaluationDuration(seconds float64)        {}

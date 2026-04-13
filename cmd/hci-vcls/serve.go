@@ -12,11 +12,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/turtacn/hci-vcls/internal/app"
+	"github.com/turtacn/hci-vcls/internal/app/audit"
 	"github.com/turtacn/hci-vcls/internal/config"
 	"github.com/turtacn/hci-vcls/internal/election"
 	"github.com/turtacn/hci-vcls/internal/heartbeat"
 	"github.com/turtacn/hci-vcls/internal/logger"
 	"github.com/turtacn/hci-vcls/pkg/api/rest"
+	"github.com/turtacn/hci-vcls/pkg/cache"
 	"github.com/turtacn/hci-vcls/pkg/cfs"
 	"github.com/turtacn/hci-vcls/pkg/fdm"
 	"github.com/turtacn/hci-vcls/pkg/ha"
@@ -24,7 +26,6 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/mysql"
 	"github.com/turtacn/hci-vcls/pkg/qm"
 	"github.com/turtacn/hci-vcls/pkg/statemachine"
-	"github.com/turtacn/hci-vcls/pkg/cache"
 	"github.com/turtacn/hci-vcls/pkg/vcls"
 	"github.com/turtacn/hci-vcls/pkg/witness"
 )
@@ -85,7 +86,7 @@ func runServe(cfg *config.Config) error {
 
 	monitor := heartbeat.NewMemoryMonitor()
 	evaluator := fdm.NewEvaluator()
-	sm := statemachine.NewMachine()
+	sm := statemachine.NewMachine(m)
 
 	hbConfig := heartbeat.HeartbeatConfig{
 		IntervalMs: int(cfg.Heartbeat.Interval.Milliseconds()),
@@ -158,7 +159,16 @@ func runServe(cfg *config.Config) error {
 		log.Error("Failed to start sweeper", zap.Error(err))
 	}
 
-	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, fdmAgent, sweeper)
+	planCache, _ := app.NewFSPlanCache("/var/lib/hci-vcls/plans")
+
+	auditLogger, err := audit.NewJSONLAuditLogger("/var/lib/hci-vcls/audit")
+	if err == nil {
+		if ea, ok := executor.(interface{ SetAudit(a ha.AuditSink) }); ok {
+			ea.SetAudit(app.NewHAAuditAdapter(auditLogger))
+		}
+	}
+
+	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, fdmAgent, sweeper, planCache)
 
 	handler := rest.NewHandler(appSvc, log)
 	restServer := rest.NewServer(cfg.Server.HTTPAddr, handler)
@@ -182,4 +192,3 @@ func runServe(cfg *config.Config) error {
 	hbService.Stop()
 	return nil
 }
-

@@ -64,7 +64,7 @@ func setupFullApp(cfg *config.Config) (*app.Service, *rest.Handler, *helpers.Tes
 
 	elector := election.NewMemoryElector(cfg.Node.NodeID, nil)
 	evaluator := fdm.NewEvaluator()
-	sm := statemachine.NewMachine()
+	sm := statemachine.NewMachine(nil)
 
 	monitor := heartbeat.NewMemoryMonitor()
 
@@ -84,7 +84,7 @@ func setupFullApp(cfg *config.Config) (*app.Service, *rest.Handler, *helpers.Tes
 
 	fdmAgent := &mockFDMAgent{level: fdm.DegradationNone}
 
-	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, fdmAgent, nil)
+	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, fdmAgent, nil, nil)
 
 	handler := rest.NewHandler(appSvc, log)
 

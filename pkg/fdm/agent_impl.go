@@ -181,112 +181,112 @@ func (a *agentImpl) probeLoop() {
 		case <-a.ctx.Done():
 			return
 		case <-ticker.C:
-			res := a.prober.ProbeAll(a.ctx)
-			allFailed := true
-
-			// Extract real component statuses using maps/structs avoiding import cycle
-			zkState := 2 // Unavailable
-			cfsState := 2
-			mysqlState := 2
-
-			// FDM levels logic:
-			// L0 maps to local service health (ZK, CFS, MySQL)
-			// L1 maps to network
-			// L2 maps to storage
-
-			for _, r := range res {
-				if r.Success {
-					allFailed = false
-				}
-				if r.Level == HeartbeatL0 {
-					// We mock the granular breakdown since Prober interface doesn't return them individually.
-					// In a real implementation L0 could be a composite. If L0 is healthy, all local deps are ok.
-					if r.Success {
-						zkState = 0
-						cfsState = 0
-						mysqlState = 0
-					} else {
-						// Mock readonly states if L0 fails for testing logic coverage
-						if r.Error != nil && r.Error.Error() == "readonly" {
-							zkState = 1
-							cfsState = 1
-						}
-					}
-				}
-			}
-
-			var baseLevel DegradationLevel
-			if allFailed {
-				baseLevel = DegradationCritical
-			} else {
-				baseLevel = DegradationNone
-			}
-
-			var finalLevel DegradationLevel = baseLevel
-			// Use the statemachine to evaluate real dependency status
-			if a.statemachine != nil {
-				input := map[string]interface{}{
-					"ZKState":    zkState,
-					"CFSState":   cfsState,
-					"MySQLState": mysqlState,
-					"FDMLevel":   baseLevel,
-				}
-				levelStr, reason := a.statemachine.EvaluateWithInput(input)
-				finalLevel = DegradationLevel(levelStr)
-
-				if a.log != nil && finalLevel != DegradationNone {
-					a.log.Info("State machine evaluation resulted in degradation", "level", finalLevel, "reason", reason)
-				}
-
-				if allFailed || finalLevel != DegradationNone {
-					_ = a.statemachine.TransitionString("degradation_detected")
-				} else {
-					_ = a.statemachine.TransitionString("heartbeat_restored")
-				}
-			}
-
-			var changed bool
-			a.mu.Lock()
-			if finalLevel != a.degradationLevel {
-				a.degradationLevel = finalLevel
-				changed = true
-			}
-			isLeader := a.isLeader
-			a.mu.Unlock()
-
-			if changed {
-				if a.metrics != nil {
-					a.metrics.SetDegradationLevel(a.config.ClusterID, float64(LevelWeight(finalLevel)))
-				}
-
-				a.mu.RLock()
-				cbs := make([]func(DegradationLevel), len(a.degradationCbs))
-				copy(cbs, a.degradationCbs)
-				a.mu.RUnlock()
-
-				for _, cb := range cbs {
-					cb(finalLevel)
-				}
-			}
-
-			// In a real scenario, an orchestrator evaluates tasks. If leader, check if HA needed.
-			// Task requirement: Trigger HA Executor only if the evaluated state is NOT Isolated (Critical)
-			// Wait, the prompt says "Trigger haExecutor.Execute() only if the new state allows HA (e.g., state is not ISOLATED)"
-			if isLeader && a.haExecutor != nil && baseLevel == DegradationCritical && finalLevel != DegradationCritical {
-				// We detect node failure (baseLevel Critical for a node we are monitoring, or we represent FDM failure).
-				// But overall cluster state is NOT Isolated, meaning HA can proceed.
-				if a.statemachine != nil {
-					_ = a.statemachine.TransitionString("evaluation_started")
-					_ = a.statemachine.TransitionString("failover_triggered")
-				}
-				if a.log != nil {
-					a.log.Info("Leader detected node failure but cluster is not isolated, triggering HA loop", "node", a.config.NodeID)
-				}
-				// Mock trigger using nil plan to satisfy the signature since we don't construct the actual plan in the bottom layer.
-				// The upper app orchestrator should ideally construct the plan and pass it to Execute.
-				_ = a.haExecutor.ExecuteWithPlan(a.ctx, nil)
-			}
+			finalLevel, reason, baseLevel := a.doProbeRound(a.ctx)
+			a.applyDegradation(finalLevel, reason)
+			a.maybeTriggerHA(a.ctx, finalLevel, baseLevel)
 		}
 	}
 }
 
+func (a *agentImpl) doProbeRound(ctx context.Context) (DegradationLevel, string, DegradationLevel) {
+	res := a.prober.ProbeAll(ctx)
+	allFailed := true
+
+	zkState := 2
+	cfsState := 2
+	mysqlState := 2
+
+	for _, r := range res {
+		if r.Success {
+			allFailed = false
+		}
+		if r.Level == HeartbeatL0 {
+			if r.Success {
+				zkState = 0
+				cfsState = 0
+				mysqlState = 0
+			} else {
+				if r.Error != nil && r.Error.Error() == "readonly" {
+					zkState = 1
+					cfsState = 1
+				}
+			}
+		}
+	}
+
+	var baseLevel DegradationLevel
+	if allFailed {
+		baseLevel = DegradationCritical
+	} else {
+		baseLevel = DegradationNone
+	}
+
+	var finalLevel DegradationLevel = baseLevel
+	var reason string
+
+	if a.statemachine != nil {
+		input := map[string]interface{}{
+			"ZKState":    zkState,
+			"CFSState":   cfsState,
+			"MySQLState": mysqlState,
+			"FDMLevel":   baseLevel,
+		}
+		levelStr, r := a.statemachine.EvaluateWithInput(input)
+		finalLevel = DegradationLevel(levelStr)
+		reason = r
+
+		if a.log != nil && finalLevel != DegradationNone {
+			a.log.Info("State machine evaluation resulted in degradation", "level", finalLevel, "reason", reason)
+		}
+
+		if allFailed || finalLevel != DegradationNone {
+			_ = a.statemachine.TransitionString("degradation_detected")
+		} else {
+			_ = a.statemachine.TransitionString("heartbeat_restored")
+		}
+	}
+
+	return finalLevel, reason, baseLevel
+}
+
+func (a *agentImpl) applyDegradation(finalLevel DegradationLevel, reason string) {
+	var changed bool
+	a.mu.Lock()
+	if finalLevel != a.degradationLevel {
+		a.degradationLevel = finalLevel
+		changed = true
+	}
+	a.mu.Unlock()
+
+	if changed {
+		if a.metrics != nil {
+			a.metrics.SetDegradationLevel(a.config.ClusterID, float64(LevelWeight(finalLevel)))
+		}
+
+		a.mu.RLock()
+		cbs := make([]func(DegradationLevel), len(a.degradationCbs))
+		copy(cbs, a.degradationCbs)
+		a.mu.RUnlock()
+
+		for _, cb := range cbs {
+			cb(finalLevel)
+		}
+	}
+}
+
+func (a *agentImpl) maybeTriggerHA(ctx context.Context, finalLevel DegradationLevel, baseLevel DegradationLevel) {
+	a.mu.RLock()
+	isLeader := a.isLeader
+	a.mu.RUnlock()
+
+	if isLeader && a.haExecutor != nil && baseLevel == DegradationCritical && finalLevel != DegradationCritical {
+		if a.statemachine != nil {
+			_ = a.statemachine.TransitionString("evaluation_started")
+			_ = a.statemachine.TransitionString("failover_triggered")
+		}
+		if a.log != nil {
+			a.log.Info("Leader detected node failure but cluster is not isolated, triggering HA loop", "node", a.config.NodeID)
+		}
+		_ = a.haExecutor.ExecuteWithPlan(ctx, nil)
+	}
+}

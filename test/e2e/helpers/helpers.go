@@ -91,7 +91,7 @@ func NewTestService(cfg *config.Config) *TestApp {
 
 	elector := election.NewMemoryElector(cfg.Node.NodeID, nil)
 	evaluator := fdm.NewEvaluator()
-	sm := statemachine.NewMachine()
+	sm := statemachine.NewMachine(m)
 
 	monitor := heartbeat.NewMemoryMonitor()
 
@@ -110,7 +110,7 @@ func NewTestService(cfg *config.Config) *TestApp {
 	planner := ha.NewPlanner()
 	executor := ha.NewExecutor(qmClient, nil, nil, taskRepo, m, nil, 0, cfg.HA.FailFast)
 
-	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, nil, nil)
+	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, nil, nil, nil)
 
 	return &TestApp{
 		Service:   appSvc,
@@ -125,4 +125,3 @@ func NewTestService(cfg *config.Config) *TestApp {
 		HBService: hbService,
 	}
 }
-

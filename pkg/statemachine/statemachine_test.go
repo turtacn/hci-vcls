@@ -9,8 +9,24 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/zk"
 )
 
+type mockMetrics struct{}
+
+func (m *mockMetrics) IncElectionTotal(node, result string)                       {}
+func (m *mockMetrics) IncLeaderChange(cluster string)                             {}
+func (m *mockMetrics) IncHeartbeatLost(node, cluster string)                      {}
+func (m *mockMetrics) SetDegradationLevel(cluster string, level float64)          {}
+func (m *mockMetrics) IncHATaskTotal(cluster, status string)                      {}
+func (m *mockMetrics) ObserveHAExecutionDuration(cluster string, seconds float64) {}
+func (m *mockMetrics) SetProtectedVMCount(cluster string, count float64)          {}
+func (m *mockMetrics) IncSweeperReleaseOK()                                       {}
+func (m *mockMetrics) IncSweeperReleaseFailed()                                   {}
+func (m *mockMetrics) SetSweeperLastRunUnix(ts float64)                           {}
+func (m *mockMetrics) IncStateMachineTransition(from, to, event string)           {}
+func (m *mockMetrics) SetStateMachineCurrentState(state string)                   {}
+func (m *mockMetrics) ObserveEvaluationDuration(seconds float64)                  {}
+
 func TestMachine(t *testing.T) {
-	m := NewMachine()
+	m := NewMachine(&mockMetrics{})
 
 	if m.Current() != StateInit {
 		t.Errorf("Expected initial state StateInit, got %v", m.Current())
@@ -111,4 +127,3 @@ func TestEvaluate(t *testing.T) {
 		})
 	}
 }
-

@@ -7,6 +7,7 @@ import (
 
 	"github.com/turtacn/hci-vcls/pkg/cfs"
 	"github.com/turtacn/hci-vcls/pkg/fdm"
+	"github.com/turtacn/hci-vcls/pkg/metrics"
 	"github.com/turtacn/hci-vcls/pkg/mysql"
 	"github.com/turtacn/hci-vcls/pkg/zk"
 )
@@ -20,15 +21,17 @@ type machineImpl struct {
 	current      State
 	history      []StateTransition
 	currentLevel string
+	metrics      metrics.Metrics
 }
 
 var _ Machine = &machineImpl{}
 
-func NewMachine() Machine {
+func NewMachine(m metrics.Metrics) Machine {
 	return &machineImpl{
 		current:      StateInit,
 		history:      make([]StateTransition, 0),
 		currentLevel: string(fdm.DegradationNone),
+		metrics:      m,
 	}
 }
 
@@ -38,6 +41,13 @@ func (m *machineImpl) TransitionString(event string) error {
 }
 
 func (m *machineImpl) EvaluateWithInput(input interface{}) (string, string) {
+	start := time.Now()
+	defer func() {
+		if m.metrics != nil {
+			m.metrics.ObserveEvaluationDuration(time.Since(start).Seconds())
+		}
+	}()
+
 	if evalMap, ok := input.(map[string]interface{}); ok {
 		zkState := zk.ZKStateUnavailable
 		if s, ok := evalMap["ZKState"].(int); ok {
@@ -131,6 +141,7 @@ func (m *machineImpl) Transition(event Event) error {
 		return ErrIllegalTransition
 	}
 
+	prevState := m.current
 	m.history = append(m.history, StateTransition{
 		From:      m.current,
 		To:        nextState,
@@ -138,6 +149,11 @@ func (m *machineImpl) Transition(event Event) error {
 		Timestamp: time.Now(),
 	})
 	m.current = nextState
+
+	if m.metrics != nil {
+		m.metrics.IncStateMachineTransition(string(prevState), string(nextState), string(event))
+		m.metrics.SetStateMachineCurrentState(string(nextState))
+	}
 
 	return nil
 }
@@ -206,4 +222,3 @@ func MapCapabilities(level fdm.DegradationLevel) []Capability {
 		return []Capability{CapabilityNoBoot}
 	}
 }
-
