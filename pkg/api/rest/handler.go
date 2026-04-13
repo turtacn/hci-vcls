@@ -111,4 +111,3 @@ func (h *Handler) handleError(c *gin.Context, err error) {
 	}
 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "code": "INTERNAL_ERROR"})
 }
-

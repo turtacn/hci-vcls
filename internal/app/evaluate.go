@@ -120,10 +120,9 @@ func (s *Service) EvaluateHA(ctx context.Context, clusterID string) (*ha.Plan, e
 	// 9. 执行
 	if s.executor != nil {
 		go func() {
-			_ = s.executor.ExecuteWithCallback(context.Background(), plan, s.onTaskDone)
+				_ = s.executor.ExecuteWithCallback(context.Background(), plan, ha.ExecuteOpts{}, s.onTaskDone)
 		}()
 	}
 
 	return plan, nil
 }
-

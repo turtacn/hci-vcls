@@ -60,3 +60,11 @@ func (c *MemoryClient) CheckBatch(ctx context.Context, vmIDs []string) (map[stri
 	return result, nil
 }
 
+func (c *MemoryClient) VoteWeight() int {
+	return 1
+}
+
+func (c *MemoryClient) ConfirmNodeFailure(ctx context.Context, nodeID string) (bool, error) {
+	// Simple mock: assume node is always failed if confirmed through witness in tests
+	return true, nil
+}

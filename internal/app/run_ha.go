@@ -24,7 +24,7 @@ type RunHAResult struct {
 // 3. Gather protected VMs
 // 4. Build execution plan
 // 5. Execute the plan
-func (s *Service) RunHAOnce(ctx context.Context, clusterID string, trigger string, failedNodeIDs []string) (*RunHAResult, error) {
+func (s *Service) RunHAOnce(ctx context.Context, clusterID string, trigger string, failedNodeIDs []string, dryRun bool) (*RunHAResult, error) {
 	if !s.election.IsLeader() {
 		return nil, ErrNotLeader
 	}
@@ -131,7 +131,7 @@ func (s *Service) RunHAOnce(ctx context.Context, clusterID string, trigger strin
 	}
 
 	// 3. Execute
-	err = s.executor.Execute(ctx, plan)
+	err = s.executor.Execute(ctx, plan, ha.ExecuteOpts{DryRun: dryRun})
 	if err != nil {
 		return &RunHAResult{
 			PlanID:    plan.ID,

@@ -52,21 +52,25 @@ func (e *executorImpl) SetAudit(a AuditSink) {
 }
 
 // ExecuteWithPlan handles untyped plan interface to avoid dependency loops from fdm agent mock calls
-func (e *executorImpl) ExecuteWithPlan(ctx context.Context, planInterface interface{}) error {
+func (e *executorImpl) ExecuteWithPlan(ctx context.Context, planInterface interface{}, opts ExecuteOpts) error {
 	plan, ok := planInterface.(*Plan)
 	if !ok {
 		return ErrInvalidPlan
 	}
-	return e.ExecuteWithCallback(ctx, plan, nil)
+	return e.ExecuteWithCallback(ctx, plan, opts, nil)
 }
 
-func (e *executorImpl) Execute(ctx context.Context, plan *Plan) error {
-	return e.ExecuteWithCallback(ctx, plan, nil)
+func (e *executorImpl) Execute(ctx context.Context, plan *Plan, opts ExecuteOpts) error {
+	return e.ExecuteWithCallback(ctx, plan, opts, nil)
 }
 
-func (e *executorImpl) ExecuteWithCallback(ctx context.Context, plan *Plan, onTaskDone func(VMTask)) error {
+func (e *executorImpl) ExecuteWithCallback(ctx context.Context, plan *Plan, opts ExecuteOpts, onTaskDone func(VMTask)) error {
 	if plan == nil || len(plan.Tasks) == 0 {
 		return ErrInvalidPlan
+	}
+
+	if opts.DryRun && e.log != nil {
+		e.log.Info("Executing HA plan in DryRun mode", "plan_id", plan.ID)
 	}
 
 	currentLevel := e.getCurrentLevel(plan)
@@ -100,7 +104,7 @@ func (e *executorImpl) ExecuteWithCallback(ctx context.Context, plan *Plan, onTa
 		default:
 		}
 
-		batchHasFailure := e.executeBatch(ctx, batchTasks, plan, currentLevel, onTaskDone)
+		batchHasFailure := e.executeBatch(ctx, batchTasks, plan, currentLevel, opts, onTaskDone)
 		if batchHasFailure {
 			hasFailure = true
 			if e.failFast {
@@ -158,13 +162,39 @@ func (e *executorImpl) groupTasksByBatch(plan *Plan) map[int][]VMTask {
 	return batches
 }
 
-func (e *executorImpl) executeBatch(ctx context.Context, batchTasks []VMTask, plan *Plan, currentLevel string, onTaskDone func(VMTask)) bool {
+func (e *executorImpl) executeBatch(ctx context.Context, batchTasks []VMTask, plan *Plan, currentLevel string, opts ExecuteOpts, onTaskDone func(VMTask)) bool {
 	batchHasFailure := false
 
 	// Execute sequentially within the batch for simplicity (or can be parallelized later)
 	for _, task := range batchTasks {
 		task.Status = TaskExecuting
 		e.updateTaskStatus(ctx, task.ID, task.Status)
+
+		if opts.DryRun {
+			if e.log != nil {
+				e.log.Info("DryRun: intention to claim boot and start VM via QM", "vm", task.VMID, "target", task.TargetHost, "path", task.BootPath)
+			}
+			task.Status = TaskDone
+			task.Reason = "dry-run success"
+			e.updateTaskStatus(ctx, task.ID, task.Status)
+
+			if e.metrics != nil {
+				e.metrics.IncHATaskTotal(task.ClusterID, "dry_run_success")
+			}
+			if e.auditSink != nil {
+				_ = e.auditSink.LogHADecision(ctx, task.ClusterID, task.VMID, plan.ID, string(task.BootPath), task.SourceHost, task.TargetHost, task.Reason, currentLevel, "success", "", true)
+			}
+
+			for j := range plan.Tasks {
+				if plan.Tasks[j].ID == task.ID {
+					plan.Tasks[j] = task
+				}
+			}
+			if onTaskDone != nil {
+				onTaskDone(task)
+			}
+			continue
+		}
 
 		// 1. Claim Boot
 		tx, claimErr := e.claimBoot(ctx, &task, plan, currentLevel)
@@ -289,7 +319,7 @@ func (e *executorImpl) finalizeTask(ctx context.Context, tx mysql.TxAdapter, pla
 		if task.Status == TaskFailed {
 			outcome = "failure"
 		}
-		_ = e.auditSink.LogHADecision(ctx, task.ClusterID, task.VMID, plan.ID, string(task.BootPath), task.SourceHost, task.TargetHost, task.Reason, currentLevel, outcome, errStr)
+		_ = e.auditSink.LogHADecision(ctx, task.ClusterID, task.VMID, plan.ID, string(task.BootPath), task.SourceHost, task.TargetHost, task.Reason, currentLevel, outcome, errStr, false)
 	}
 
 	return retErr

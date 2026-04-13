@@ -59,13 +59,15 @@ type mockExecutor struct {
 	executed atomic.Bool
 }
 
-func (m *mockExecutor) Execute(ctx context.Context, plan *ha.Plan) error { return nil }
-func (m *mockExecutor) ExecuteWithCallback(ctx context.Context, plan *ha.Plan, cb func(ha.VMTask)) error {
+func (m *mockExecutor) Execute(ctx context.Context, plan *ha.Plan, opts ha.ExecuteOpts) error {
+	return nil
+}
+func (m *mockExecutor) ExecuteWithCallback(ctx context.Context, plan *ha.Plan, opts ha.ExecuteOpts, cb func(ha.VMTask)) error {
 	m.executed.Store(true)
 	return nil
 }
 
-func (m *mockExecutor) ExecuteWithPlan(ctx context.Context, planInterface interface{}) error {
+func (m *mockExecutor) ExecuteWithPlan(ctx context.Context, planInterface interface{}, opts ha.ExecuteOpts) error {
 	m.executed.Store(true)
 	return nil
 }

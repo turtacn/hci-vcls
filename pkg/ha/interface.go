@@ -18,12 +18,20 @@ type Planner interface {
 	BuildPlan(ctx context.Context, req PlanRequest) (*Plan, error)
 }
 
+// ExecuteOpts configures a single Execute invocation.
+// Zero value means normal production execution.
+type ExecuteOpts struct {
+	DryRun         bool
+	MaxConcurrency int
+	Timeout        int
+}
+
 type Executor interface {
-	Execute(ctx context.Context, plan *Plan) error
-	ExecuteWithCallback(ctx context.Context, plan *Plan, onTaskDone func(VMTask)) error
-	ExecuteWithPlan(ctx context.Context, planInterface interface{}) error
+	Execute(ctx context.Context, plan *Plan, opts ExecuteOpts) error
+	ExecuteWithCallback(ctx context.Context, plan *Plan, opts ExecuteOpts, onTaskDone func(VMTask)) error
+	ExecuteWithPlan(ctx context.Context, planInterface interface{}, opts ExecuteOpts) error
 }
 
 type AuditSink interface {
-	LogHADecision(ctx context.Context, clusterID, vmid, planID, bootPath, sourceHost, targetHost, reason, degradation, outcome, errStr string) error
+	LogHADecision(ctx context.Context, clusterID, vmid, planID, bootPath, sourceHost, targetHost, reason, degradation, outcome, errStr string, dryRun bool) error
 }

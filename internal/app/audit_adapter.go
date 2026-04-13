@@ -14,7 +14,7 @@ func NewHAAuditAdapter(l audit.AuditLogger) *haAuditAdapter {
 	return &haAuditAdapter{logger: l}
 }
 
-func (a *haAuditAdapter) LogHADecision(ctx context.Context, clusterID, vmid, planID, bootPath, sourceHost, targetHost, reason, degradation, outcome, errStr string) error {
+func (a *haAuditAdapter) LogHADecision(ctx context.Context, clusterID, vmid, planID, bootPath, sourceHost, targetHost, reason, degradation, outcome, errStr string, dryRun bool) error {
 	return a.logger.LogHADecision(ctx, audit.HADecisionRecord{
 		ClusterID:   clusterID,
 		VMID:        vmid,
@@ -26,5 +26,6 @@ func (a *haAuditAdapter) LogHADecision(ctx context.Context, clusterID, vmid, pla
 		Degradation: degradation,
 		Outcome:     outcome,
 		Error:       errStr,
+		DryRun:      dryRun,
 	})
 }

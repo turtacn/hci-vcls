@@ -101,7 +101,7 @@ func TestExecutor_Execute_GateReject(t *testing.T) {
 		Tasks:        []VMTask{{ID: "task-1", Status: TaskPending}},
 	}
 
-	err := executor.Execute(ctx, plan)
+	err := executor.Execute(ctx, plan, ExecuteOpts{})
 	if !errors.Is(err, ErrSkippedIsolated) {
 		t.Errorf("expected ErrSkippedIsolated, got %v", err)
 	}
@@ -121,7 +121,7 @@ func TestExecutor_Execute_MySQLClaimConflict(t *testing.T) {
 		Tasks:        []VMTask{{ID: "task-1", Status: TaskPending, VMID: "vm-1", BatchNo: 1}},
 	}
 
-	err := executor.Execute(ctx, plan)
+	err := executor.Execute(ctx, plan, ExecuteOpts{})
 	if !errors.Is(err, ErrPartialFailure) {
 		t.Errorf("expected ErrPartialFailure due to conflict, got %v", err)
 	}
@@ -143,7 +143,7 @@ func TestExecutor_Execute_MySQLUnavailableMajor(t *testing.T) {
 		Tasks:        []VMTask{{ID: "task-1", Status: TaskPending, VMID: "vm-1", BatchNo: 1}},
 	}
 
-	err := executor.Execute(ctx, plan)
+	err := executor.Execute(ctx, plan, ExecuteOpts{})
 	if !errors.Is(err, ErrPartialFailure) {
 		t.Errorf("expected ErrPartialFailure due to mysql unavailable, got %v", err)
 	}
@@ -175,7 +175,7 @@ func TestExecutor_Execute_CacheMiss(t *testing.T) {
 	}
 
 	// It should warn on cache miss, but still try to start VM and succeed
-	err := exec.Execute(ctx, plan)
+	err := exec.Execute(ctx, plan, ExecuteOpts{})
 	if err != nil {
 		t.Errorf("expected nil error despite cache miss, got %v", err)
 	}
@@ -200,7 +200,7 @@ func TestExecutor_Execute_QMAlreadyRunning(t *testing.T) {
 		Tasks:        []VMTask{{ID: "task-1", Status: TaskPending, VMID: "vm-1", BatchNo: 1}},
 	}
 
-	err := exec.Execute(ctx, plan)
+	err := exec.Execute(ctx, plan, ExecuteOpts{})
 	if err != nil {
 		t.Errorf("expected idempotency success, got %v", err)
 	}
@@ -228,7 +228,7 @@ func TestExecutor_Execute_QMStartFailure(t *testing.T) {
 		Tasks:        []VMTask{{ID: "task-1", Status: TaskPending, VMID: "vm-1", BatchNo: 1}},
 	}
 
-	err := exec.Execute(ctx, plan)
+	err := exec.Execute(ctx, plan, ExecuteOpts{})
 	if !errors.Is(err, ErrPartialFailure) {
 		t.Errorf("expected partial failure due to qm start error, got %v", err)
 	}
@@ -256,7 +256,7 @@ func TestExecutor_Execute_FailFast(t *testing.T) {
 		},
 	}
 
-	err := exec.Execute(ctx, plan)
+	err := exec.Execute(ctx, plan, ExecuteOpts{})
 	if !errors.Is(err, ErrPartialFailure) {
 		t.Errorf("expected partial failure, got %v", err)
 	}
@@ -279,7 +279,7 @@ func TestExecutor_Execute_CtxCancel(t *testing.T) {
 		Tasks:        []VMTask{{ID: "task-1", Status: TaskPending, BatchNo: 1}},
 	}
 
-	err := exec.Execute(ctx, plan)
+	err := exec.Execute(ctx, plan, ExecuteOpts{})
 	if !errors.Is(err, ErrLeadershipLost) {
 		t.Errorf("expected leadership lost due to context cancellation, got %v", err)
 	}

@@ -17,7 +17,7 @@ func TestRunHAOnce_NotLeader(t *testing.T) {
 	elector := &mockElector{leader: false}
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 
-	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if !errors.Is(err, ErrNotLeader) {
 		t.Errorf("expected ErrNotLeader, got %v", err)
 	}
@@ -31,7 +31,7 @@ func TestRunHAOnce_CriticalDegradation(t *testing.T) {
 	agent := &mockFDMAgent{level: fdm.DegradationCritical}
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, nil, nil, nil, nil, nil, nil, agent, nil, nil)
 
-	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if !errors.Is(err, ErrBelowThreshold) {
 		t.Errorf("expected ErrBelowThreshold, got %v", err)
 	}
@@ -46,7 +46,7 @@ func TestRunHAOnce_NoEligibleVMs(t *testing.T) {
 	vclsService := &mockVCLS{eligible: []*vcls.VM{}}
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, nil, nil, nil, nil, nil, agent, nil, nil)
 
-	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}
@@ -62,7 +62,7 @@ func TestRunHAOnce_PlannerFails(t *testing.T) {
 	planner := &mockPlannerErr{}
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, nil, nil, nil, nil, agent, nil, nil)
 
-	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if err == nil {
 		t.Errorf("expected error from planner")
 	}
@@ -78,7 +78,7 @@ func TestRunHAOnce_EmptyPlan(t *testing.T) {
 	planner := &mockPlanner{plan: &ha.Plan{}} // empty tasks
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, nil, nil, nil, nil, agent, nil, nil)
 
-	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}
@@ -95,7 +95,7 @@ func TestRunHAOnce_ExecutorFails(t *testing.T) {
 	executor := &mockExecutorErr{}
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, nil, agent, nil, nil)
 
-	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if err == nil {
 		t.Errorf("expected error from executor")
 	}
@@ -117,7 +117,7 @@ func TestRunHAOnce_Success(t *testing.T) {
 	executor := &mockExecutor{}
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, nil, agent, nil, nil)
 
-	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	res, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}
@@ -138,13 +138,13 @@ func (m *mockPlannerErr) BuildPlan(ctx context.Context, req ha.PlanRequest) (*ha
 
 type mockExecutorErr struct{}
 
-func (m *mockExecutorErr) Execute(ctx context.Context, plan *ha.Plan) error {
+func (m *mockExecutorErr) Execute(ctx context.Context, plan *ha.Plan, opts ha.ExecuteOpts) error {
 	return errors.New("executor error")
 }
-func (m *mockExecutorErr) ExecuteWithCallback(ctx context.Context, plan *ha.Plan, onTaskDone func(ha.VMTask)) error {
+func (m *mockExecutorErr) ExecuteWithCallback(ctx context.Context, plan *ha.Plan, opts ha.ExecuteOpts, onTaskDone func(ha.VMTask)) error {
 	return errors.New("executor error")
 }
-func (m *mockExecutorErr) ExecuteWithPlan(ctx context.Context, planInterface interface{}) error {
+func (m *mockExecutorErr) ExecuteWithPlan(ctx context.Context, planInterface interface{}, opts ha.ExecuteOpts) error {
 	return errors.New("executor error")
 }
 
@@ -174,7 +174,7 @@ func TestRunHAOnce_PersistsPlan(t *testing.T) {
 
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, planRepo, agent, nil, nil)
 
-	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
@@ -197,7 +197,7 @@ func TestRunHAOnce_PlanRepoFails_StillExecutes(t *testing.T) {
 
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, planRepo, agent, nil, nil)
 
-	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if err != nil {
 		t.Fatalf("expected nil error, execution should proceed even if plan persistence fails, got %v", err)
 	}
@@ -233,7 +233,7 @@ func TestRunHAOnce_PlanCachePutFails_Aborts(t *testing.T) {
 
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, nil, agent, nil, planCache)
 
-	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if err == nil {
 		t.Errorf("expected error when planCache.Put fails")
 	}
@@ -257,7 +257,7 @@ func TestRunHAOnce_Success_ClearsCache(t *testing.T) {
 
 	s := NewService(&config.Config{}, zap.NewNop(), nil, elector, nil, vclsService, planner, executor, nil, nil, nil, agent, nil, planCache)
 
-	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil)
+	_, err := s.RunHAOnce(context.Background(), "cluster-1", "auto", nil, false)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}

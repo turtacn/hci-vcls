@@ -71,7 +71,8 @@ func (e *memoryElector) asyncSaveTerm(term int64, votedFor string) {
 	}
 }
 
-func (e *memoryElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {
+// Receives peer state, optionally incorporating dynamic VoteWeight for witness
+func (e *memoryElector) ReceivePeerStateWithWeight(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool, voteWeight int) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -94,11 +95,14 @@ func (e *memoryElector) ReceivePeerState(peerNodeID string, peerTerm int64, peer
 		e.asyncSaveTerm(e.term, e.votedFor)
 	} else if peerVoteFor == e.nodeID && peerTerm == e.term {
 		// They voted for us
-		e.votesGranted++
-		if !e.isLeader && e.votesGranted >= (e.nodesCount/2)+1 {
-			e.isLeader = true
-			e.leaderID = e.nodeID
-			e.notify()
+		e.votesGranted += voteWeight
+		if !e.isLeader {
+			requiredVotes := (e.nodesCount / 2) + 1
+			if e.votesGranted >= requiredVotes {
+				e.isLeader = true
+				e.leaderID = e.nodeID
+				e.notify()
+			}
 		}
 	}
 
@@ -109,6 +113,10 @@ func (e *memoryElector) ReceivePeerState(peerNodeID string, peerTerm int64, peer
 		e.isLeader = false
 		e.notify()
 	}
+}
+
+func (e *memoryElector) ReceivePeerState(peerNodeID string, peerTerm int64, peerVoteFor string, isLeader bool) {
+	e.ReceivePeerStateWithWeight(peerNodeID, peerTerm, peerVoteFor, isLeader, 1)
 }
 
 func (e *memoryElector) CurrentTermAndVote() (int64, string, bool) {
@@ -123,7 +131,7 @@ func (e *memoryElector) Campaign(ctx context.Context) error {
 
 	e.term++
 	e.votedFor = e.nodeID
-	e.votesGranted = 1
+	e.votesGranted = 1 // Vote weight of 1 for self
 	e.asyncSaveTerm(e.term, e.votedFor)
 
 	// Special case for single node clusters

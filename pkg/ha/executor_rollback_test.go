@@ -26,7 +26,7 @@ func TestExecutor_Finalize_RollbackOnQMStartFailure(t *testing.T) {
 		Tasks:        []VMTask{{ID: "task-1", Status: TaskPending, VMID: "vm-1", BatchNo: 1}},
 	}
 
-	err := executor.Execute(ctx, plan)
+	err := executor.Execute(ctx, plan, ExecuteOpts{})
 	if !errors.Is(err, ErrPartialFailure) {
 		t.Errorf("expected ErrPartialFailure, got %v", err)
 	}
@@ -56,7 +56,7 @@ func TestExecutor_Finalize_RollbackFailureDoesNotMaskOriginalError(t *testing.T)
 		Tasks:        []VMTask{{ID: "task-1", Status: TaskPending, VMID: "vm-1", BatchNo: 1}},
 	}
 
-	err := executor.Execute(ctx, plan)
+	err := executor.Execute(ctx, plan, ExecuteOpts{})
 	if !errors.Is(err, ErrPartialFailure) {
 		t.Errorf("expected ErrPartialFailure, got %v", err)
 	}
@@ -86,7 +86,7 @@ func TestExecutor_Finalize_CommitOnSuccess(t *testing.T) {
 		Tasks:        []VMTask{{ID: "task-1", Status: TaskPending, VMID: "vm-1", BatchNo: 1}},
 	}
 
-	err := executor.Execute(ctx, plan)
+	err := executor.Execute(ctx, plan, ExecuteOpts{})
 	if err != nil {
 		t.Errorf("expected success, got %v", err)
 	}

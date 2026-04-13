@@ -17,6 +17,7 @@ func newHACmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().String("cluster-id", "", "Cluster ID")
+	cmd.PersistentFlags().Bool("dry-run", false, "Run HA executor in dry-run mode")
 
 	cmd.AddCommand(&cobra.Command{
 		Use: "tasks",
@@ -41,7 +42,11 @@ func newHACmd() *cobra.Command {
 				return fmt.Errorf("cluster-id is required")
 			}
 
-			reqBody, _ := json.Marshal(map[string]string{"cluster_id": clusterID})
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			reqBody, _ := json.Marshal(map[string]interface{}{
+				"cluster_id": clusterID,
+				"dry_run":    dryRun,
+			})
 
 			resp, err := http.Post("http://localhost:8080/api/v1/ha/evaluate", "application/json", bytes.NewBuffer(reqBody))
 			if err != nil {
@@ -57,4 +62,3 @@ func newHACmd() *cobra.Command {
 
 	return cmd
 }
-

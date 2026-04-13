@@ -29,7 +29,7 @@ func TestExecutor_Execute(t *testing.T) {
 	ctx := context.Background()
 
 	// Test missing plan
-	err := executor.Execute(ctx, nil)
+	err := executor.Execute(ctx, nil, ExecuteOpts{})
 	if err != ErrInvalidPlan {
 		t.Errorf("Expected ErrInvalidPlan, got %v", err)
 	}
@@ -43,7 +43,7 @@ func TestExecutor_Execute(t *testing.T) {
 			{ID: "task-2", Status: TaskSkipped, BatchNo: 1},
 		},
 	}
-	err = executor.Execute(ctx, plan)
+	err = executor.Execute(ctx, plan, ExecuteOpts{})
 	if err != nil {
 		t.Fatalf("Expected nil err, got %v", err)
 	}
@@ -53,7 +53,7 @@ func TestExecutor_Execute(t *testing.T) {
 
 	// Test failure
 	mockQM.startErr = errors.New("start failed")
-	err = executor.Execute(ctx, plan)
+	err = executor.Execute(ctx, plan, ExecuteOpts{})
 	if err != ErrPartialFailure {
 		t.Errorf("Expected ErrPartialFailure, got %v", err)
 	}
@@ -62,7 +62,7 @@ func TestExecutor_Execute(t *testing.T) {
 	ctxCancel, cancel := context.WithCancel(context.Background())
 	cancel() // pre-cancel
 
-	err = executor.Execute(ctxCancel, plan)
+	err = executor.Execute(ctxCancel, plan, ExecuteOpts{})
 	if err != ErrLeadershipLost {
 		t.Errorf("Expected ErrLeadershipLost, got %v", err)
 	}
@@ -82,16 +82,15 @@ func TestExecutor_ExecuteWithOptimisticLock(t *testing.T) {
 			{ID: "task-1", Status: TaskPending, VMID: "vm-1", TargetHost: "host-2", BatchNo: 1},
 		},
 	}
-	err := executor.Execute(ctx, plan)
+	err := executor.Execute(ctx, plan, ExecuteOpts{})
 	if err != nil {
 		t.Fatalf("Expected nil err, got %v", err)
 	}
 
 	// Wait idempotency testing
 	mockQM.startErr = qm.ErrVMAlreadyRunning
-	err = executor.Execute(ctx, plan)
+	err = executor.Execute(ctx, plan, ExecuteOpts{})
 	if err != nil {
 		t.Errorf("Expected idempotency to hide ErrVMAlreadyRunning, got %v", err)
 	}
 }
-

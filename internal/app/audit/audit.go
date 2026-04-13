@@ -26,6 +26,7 @@ type HADecisionRecord struct {
 	Degradation string    `json:"degradation"`
 	Outcome     string    `json:"outcome"`
 	Error       string    `json:"error,omitempty"`
+	DryRun      bool      `json:"dry_run"`
 }
 
 type jsonlAuditLogger struct {

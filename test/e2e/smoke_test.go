@@ -285,7 +285,7 @@ func TestE2E_Loop3_HADecisionAndExecution(t *testing.T) {
 	_ = testApp.TaskRepo.Create(ctx, dbTask)
 
 	// Now manually execute it via the service's executor since the REST API doesn't allow injecting mock candidates easily
-	_ = testApp.Service.Executor().Execute(ctx, plan)
+	_ = testApp.Service.Executor().Execute(ctx, plan, ha.ExecuteOpts{})
 
 	// Verify task in repo became completed (mock qm executor marks it Done)
 	tasks, _ := testApp.TaskRepo.ListByPlan(context.Background(), plan.ID)
@@ -316,4 +316,3 @@ func TestE2E_Loop3_HADecisionAndExecution(t *testing.T) {
 		t.Fatalf("Expected 200 OK for /tasks, got %d", w.Code)
 	}
 }
-

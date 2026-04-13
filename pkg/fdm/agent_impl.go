@@ -8,6 +8,7 @@ import (
 	"github.com/turtacn/hci-vcls/internal/election"
 	"github.com/turtacn/hci-vcls/internal/logger"
 	"github.com/turtacn/hci-vcls/pkg/metrics"
+	"github.com/turtacn/hci-vcls/pkg/witness"
 )
 
 // statemachine and ha references removed here to avoid import cycles.
@@ -30,6 +31,7 @@ type agentImpl struct {
 	elector          election.Elector
 	statemachine     statemachineWrapper
 	haExecutor       haExecutorWrapper
+	witnessClient    witness.Client
 	log              logger.Logger
 	metrics          metrics.Metrics
 	nodeStates       map[string]NodeState
@@ -71,6 +73,10 @@ func (a *agentImpl) SetStateMachine(sm statemachineWrapper) {
 
 func (a *agentImpl) SetHAExecutor(exe haExecutorWrapper) {
 	a.haExecutor = exe
+}
+
+func (a *agentImpl) SetWitnessClient(client witness.Client) {
+	a.witnessClient = client
 }
 
 func (a *agentImpl) Start(ctx context.Context) error {
@@ -280,6 +286,17 @@ func (a *agentImpl) maybeTriggerHA(ctx context.Context, finalLevel DegradationLe
 	a.mu.RUnlock()
 
 	if isLeader && a.haExecutor != nil && baseLevel == DegradationCritical && finalLevel != DegradationCritical {
+		// Double check with witness if cluster size is 2
+		if len(a.config.HeartbeatPeers) == 1 && a.witnessClient != nil {
+			confirmed, err := a.witnessClient.ConfirmNodeFailure(ctx, a.config.HeartbeatPeers[0])
+			if err != nil || !confirmed {
+				if a.log != nil {
+					a.log.Warn("Witness did not confirm node failure in 2-node cluster, skipping HA", "node", a.config.HeartbeatPeers[0])
+				}
+				return
+			}
+		}
+
 		if a.statemachine != nil {
 			_ = a.statemachine.TransitionString("evaluation_started")
 			_ = a.statemachine.TransitionString("failover_triggered")
