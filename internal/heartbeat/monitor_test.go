@@ -6,7 +6,7 @@ import (
 )
 
 func TestMemoryMonitor(t *testing.T) {
-	monitor := NewMemoryMonitor()
+	monitor := NewMemoryMonitor(nil)
 
 	now := time.Now()
 	sample := Sample{

@@ -66,7 +66,7 @@ func setupFullApp(cfg *config.Config) (*app.Service, *rest.Handler, *helpers.Tes
 	evaluator := fdm.NewEvaluator()
 	sm := statemachine.NewMachine(nil)
 
-	monitor := heartbeat.NewMemoryMonitor()
+	monitor := heartbeat.NewMemoryMonitor(nil)
 
 	hbConfig := heartbeat.HeartbeatConfig{
 		IntervalMs: 10,

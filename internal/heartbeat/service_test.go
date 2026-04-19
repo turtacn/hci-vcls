@@ -37,7 +37,7 @@ func (m *mockEvaluator) Evaluate(ctx context.Context, clusterID string, leaderNo
 
 func TestHeartbeatService(t *testing.T) {
 	cfg := HeartbeatConfig{IntervalMs: 10, TimeoutMs: 20}
-	monitor := NewMemoryMonitor()
+	monitor := NewMemoryMonitor(nil)
 	elector := &mockElector{leader: true}
 	sm := statemachine.NewMachine(nil)
 
@@ -71,7 +71,7 @@ func TestHeartbeatService(t *testing.T) {
 
 func TestHeartbeatService_NotLeader(t *testing.T) {
 	cfg := HeartbeatConfig{IntervalMs: 10, TimeoutMs: 20}
-	monitor := NewMemoryMonitor()
+	monitor := NewMemoryMonitor(nil)
 	elector := &mockElector{leader: false}
 
 	// Evaluator should not be called

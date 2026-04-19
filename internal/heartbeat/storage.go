@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/turtacn/hci-vcls/internal/logger"
 )
 
 type StorageHeartbeater struct {
@@ -21,11 +23,12 @@ type StorageHeartbeater struct {
 	cancel       context.CancelFunc
 	stateDigest  *StateDigest
 	digestMu     sync.RWMutex
+	log          logger.Logger
 }
 
 var _ Heartbeater = &StorageHeartbeater{}
 
-func NewStorageHeartbeater(config HeartbeatConfig, dir string) *StorageHeartbeater {
+func NewStorageHeartbeater(config HeartbeatConfig, dir string, log logger.Logger) *StorageHeartbeater {
 	ctx, cancel := context.WithCancel(context.Background())
 	hb := &StorageHeartbeater{
 		config:       config,
@@ -39,6 +42,7 @@ func NewStorageHeartbeater(config HeartbeatConfig, dir string) *StorageHeartbeat
 		stateDigest: &StateDigest{
 			NodeID: config.NodeID,
 		},
+		log: log,
 	}
 
 	for _, peer := range config.Peers {
@@ -110,25 +114,88 @@ func (h *StorageHeartbeater) writeLoop() {
 	ticker := time.NewTicker(time.Duration(h.config.IntervalMs) * time.Millisecond)
 	defer ticker.Stop()
 
-	filename := filepath.Join(h.dir, h.config.NodeID+".hb")
-	tmpFilename := filename + ".tmp"
-
 	for {
 		select {
 		case <-h.ctx.Done():
 			return
 		case <-ticker.C:
-			h.digestMu.RLock()
+			h.digestMu.Lock()
 			h.stateDigest.Timestamp = time.Now()
-			data, _ := json.Marshal(h.stateDigest)
-			h.digestMu.RUnlock()
+			timestamp := h.stateDigest.Timestamp
+			h.digestMu.Unlock()
 
-			// Atomic write
-			if err := os.WriteFile(tmpFilename, data, 0644); err == nil {
-				os.Rename(tmpFilename, filename)
+			h.Write(h.config.NodeID, timestamp)
+		}
+	}
+}
+
+func (h *StorageHeartbeater) Write(nodeID string, timestamp time.Time) {
+	nodeDir := filepath.Join(h.dir, nodeID)
+	if err := os.MkdirAll(nodeDir, 0755); err != nil {
+		if h.log != nil {
+			h.log.Warn("Failed to create storage heartbeat directory", "dir", nodeDir, "error", err)
+		}
+		return
+	}
+
+	filename := filepath.Join(nodeDir, "hb.json")
+	tmpFilename := filename + ".tmp"
+
+	h.digestMu.Lock()
+	h.stateDigest.Timestamp = timestamp
+	data, _ := json.Marshal(h.stateDigest)
+	h.digestMu.Unlock()
+
+	// Atomic write
+	if err := os.WriteFile(tmpFilename, data, 0644); err == nil {
+		if err := os.Rename(tmpFilename, filename); err != nil {
+			if h.log != nil {
+				h.log.Warn("Failed to rename storage heartbeat file", "node", nodeID, "error", err)
+			}
+		}
+	} else {
+		if h.log != nil {
+			h.log.Warn("Failed to write to storage heartbeat file", "node", nodeID, "error", err)
+		}
+	}
+}
+
+func (h *StorageHeartbeater) Read(nodeID string) (time.Time, error) {
+	filename := filepath.Join(h.dir, nodeID, "hb.json")
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	var digest StateDigest
+	if err := json.Unmarshal(data, &digest); err != nil {
+		return time.Time{}, err
+	}
+
+	return digest.Timestamp, nil
+}
+
+func (h *StorageHeartbeater) ReadAll() map[string]time.Time {
+	res := make(map[string]time.Time)
+	files, err := os.ReadDir(h.dir)
+	if err != nil {
+		if h.log != nil {
+			h.log.Warn("Failed to read storage heartbeat directory", "dir", h.dir, "error", err)
+		}
+		return res
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			nodeID := f.Name()
+			ts, err := h.Read(nodeID)
+			if err == nil {
+				res[nodeID] = ts
 			}
 		}
 	}
+
+	return res
 }
 
 func (h *StorageHeartbeater) readLoop() {
@@ -140,28 +207,23 @@ func (h *StorageHeartbeater) readLoop() {
 		case <-h.ctx.Done():
 			return
 		case <-ticker.C:
+			allTimes := h.ReadAll()
+
 			h.peerStatesMu.Lock()
 			for peer := range h.peerStates {
 				if peer == h.config.NodeID {
 					continue
 				}
 
-				filename := filepath.Join(h.dir, peer+".hb")
-				data, err := os.ReadFile(filename)
-				if err != nil {
-					continue
-				}
-
-				var digest StateDigest
-				if err := json.Unmarshal(data, &digest); err != nil {
+				ts, ok := allTimes[peer]
+				if !ok {
 					continue
 				}
 
 				state := h.peerStates[peer]
-				// Basic check to see if timestamp updated
-				if digest.Timestamp.After(state.LastSeen) {
+				if ts.After(state.LastSeen) {
 					wasAlive := state.IsAlive
-					state.LastSeen = digest.Timestamp
+					state.LastSeen = ts
 					state.IsAlive = true
 					h.peerStates[peer] = state
 
@@ -169,9 +231,14 @@ func (h *StorageHeartbeater) readLoop() {
 						h.notifyRecovered(peer)
 					}
 
-					// Only trigger digest received if it's a new update
-					for _, cb := range h.digestCbs {
-						cb(digest)
+					filename := filepath.Join(h.dir, peer, "hb.json")
+					if data, err := os.ReadFile(filename); err == nil {
+						var digest StateDigest
+						if json.Unmarshal(data, &digest) == nil {
+							for _, cb := range h.digestCbs {
+								cb(digest)
+							}
+						}
 					}
 				}
 			}

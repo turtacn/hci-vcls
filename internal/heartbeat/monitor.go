@@ -6,15 +6,17 @@ import (
 )
 
 type memoryMonitor struct {
-	mu        sync.RWMutex
-	summaries map[string]Summary
+	mu           sync.RWMutex
+	summaries    map[string]Summary
+	storageLayer *StorageHeartbeater
 }
 
 var _ Monitor = &memoryMonitor{}
 
-func NewMemoryMonitor() *memoryMonitor {
+func NewMemoryMonitor(storageLayer *StorageHeartbeater) *memoryMonitor {
 	return &memoryMonitor{
-		summaries: make(map[string]Summary),
+		summaries:    make(map[string]Summary),
+		storageLayer: storageLayer,
 	}
 }
 
@@ -61,6 +63,18 @@ func (m *memoryMonitor) CheckTimeouts(now time.Time, timeout time.Duration) {
 
 	for nodeID, s := range m.summaries {
 		if s.Healthy && now.Sub(s.LastSeenAt) > timeout {
+			// Complement L1 UDP loss with L2 Storage Heartbeat if available
+			if m.storageLayer != nil {
+				if ts, err := m.storageLayer.Read(nodeID); err == nil {
+					// Check if storage heartbeat is fresh
+					if now.Sub(ts) <= timeout {
+						s.LastSeenAt = ts
+						m.summaries[nodeID] = s
+						continue
+					}
+				}
+			}
+
 			s.Healthy = false
 			s.LostCount++
 			m.summaries[nodeID] = s

@@ -84,7 +84,7 @@ func runServe(cfg *config.Config) error {
 	}
 	elector := election.NewMemoryElector(cfg.Node.NodeID, termStore)
 
-	monitor := heartbeat.NewMemoryMonitor()
+	monitor := heartbeat.NewMemoryMonitor(nil) // Pass storage layer if integrated later
 	evaluator := fdm.NewEvaluator()
 	sm := statemachine.NewMachine(m)
 
@@ -95,6 +95,12 @@ func runServe(cfg *config.Config) error {
 	}
 
 	appLogger := logger.NewLogger(cfg.Log.Level, cfg.Log.Format)
+
+	storageHb := heartbeat.NewStorageHeartbeater(hbConfig, "/var/lib/hci-vcls/heartbeat", appLogger)
+	_ = storageHb.Start(context.Background()) // start L2 storage heartbeat background workers
+	monitor = heartbeat.NewMemoryMonitor(storageHb)
+	evaluator = fdm.NewEvaluator()
+	sm = statemachine.NewMachine(m)
 
 	udpHeartbeater := heartbeat.NewUDPHeartbeater(hbConfig)
 	hbService := heartbeat.NewService(hbConfig, udpHeartbeater, monitor, elector, evaluator, sm, m, appLogger)

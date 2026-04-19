@@ -93,7 +93,7 @@ func NewTestService(cfg *config.Config) *TestApp {
 	evaluator := fdm.NewEvaluator()
 	sm := statemachine.NewMachine(m)
 
-	monitor := heartbeat.NewMemoryMonitor()
+	monitor := heartbeat.NewMemoryMonitor(nil)
 
 	hbConfig := heartbeat.HeartbeatConfig{
 		IntervalMs: int(cfg.Heartbeat.Interval.Milliseconds()),

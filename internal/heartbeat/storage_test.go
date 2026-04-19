@@ -23,7 +23,7 @@ func TestStorageHeartbeater(t *testing.T) {
 		TimeoutMs:  50,
 	}
 
-	hb := NewStorageHeartbeater(cfg, dir)
+	hb := NewStorageHeartbeater(cfg, dir, nil)
 
 	err := hb.Start(context.Background())
 	if err != nil {
@@ -37,13 +37,15 @@ func TestStorageHeartbeater(t *testing.T) {
 	time.Sleep(30 * time.Millisecond)
 
 	// Verify file was written
-	filename := filepath.Join(dir, "node1.hb")
+	filename := filepath.Join(dir, "node1", "hb.json")
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		t.Errorf("expected hb file to be created")
 	}
 
 	// Simulate peer heartbeat file
-	peerFile := filepath.Join(dir, "node2.hb")
+	peerDir := filepath.Join(dir, "node2")
+	os.MkdirAll(peerDir, 0755)
+	peerFile := filepath.Join(peerDir, "hb.json")
 	os.WriteFile(peerFile, []byte(`{"NodeID":"node2","Timestamp":"2099-01-01T00:00:00Z"}`), 0644)
 
 	// Wait for read loop
@@ -67,7 +69,7 @@ func TestStorageHeartbeater(t *testing.T) {
 }
 
 func TestStorageHeartbeater_PeerStateError(t *testing.T) {
-	hb := NewStorageHeartbeater(HeartbeatConfig{}, t.TempDir())
+	hb := NewStorageHeartbeater(HeartbeatConfig{}, t.TempDir(), nil)
 	_, err := hb.PeerState("node2")
 	if err != ErrPeerNotFound {
 		t.Errorf("expected ErrPeerNotFound, got %v", err)
