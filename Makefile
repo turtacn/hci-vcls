@@ -35,6 +35,6 @@ clean:
 	rm -f pkg/api/proto/*.pb.go
 
 coverage:
-	go test -coverprofile=coverage.out -coverpkg=./... $(shell go list ./pkg/... ./internal/... | grep -v /pkg/api/proto)
-	go tool cover -html=coverage.out
+	go test -coverprofile=coverage.out $$(go list ./... | grep -v '/api/proto$$' | grep -v '/test/e2e/helpers$$')
+	go tool cover -func=coverage.out
 
