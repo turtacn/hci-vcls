@@ -15,7 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/turtacn/hci-vcls/internal/app"
 	"github.com/turtacn/hci-vcls/internal/config"
-	"github.com/turtacn/hci-vcls/internal/election"
 	"github.com/turtacn/hci-vcls/internal/heartbeat"
 	"github.com/turtacn/hci-vcls/pkg/api/rest"
 	"github.com/turtacn/hci-vcls/pkg/cfs"
@@ -23,10 +22,7 @@ import (
 	"github.com/turtacn/hci-vcls/pkg/ha"
 	"github.com/turtacn/hci-vcls/pkg/metrics"
 	"github.com/turtacn/hci-vcls/pkg/mysql"
-	"github.com/turtacn/hci-vcls/pkg/qm"
-	"github.com/turtacn/hci-vcls/pkg/statemachine"
 	"github.com/turtacn/hci-vcls/pkg/vcls"
-	"github.com/turtacn/hci-vcls/pkg/witness"
 
 	"github.com/turtacn/hci-vcls/test/e2e/helpers"
 )
@@ -51,55 +47,15 @@ func (m *mockFDMAgent) LeaderNodeID() string                            { return
 func (m *mockFDMAgent) ClusterView() fdm.ClusterView                    { return m.cv }
 
 func setupFullApp(cfg *config.Config) (*app.Service, *rest.Handler, *helpers.TestApp, *mockFDMAgent) {
-	m := metrics.NewNoopMetrics()
+	testApp := helpers.NewTestService(cfg)
+	fdmAgent := &mockFDMAgent{level: fdm.DegradationNone}
 	log := zap.NewNop()
 
-	cfsClient := cfs.NewMemoryClient()
-	qmClient := qm.NewMemoryClient(0.0, 1*time.Millisecond)
-	witClient := witness.NewMemoryClient()
-
-	vmRepo := mysql.NewMemoryVMRepository()
-	taskRepo := mysql.NewMemoryHATaskRepository()
-	planRepo := mysql.NewMemoryPlanRepository()
-
-	elector := election.NewMemoryElector(cfg.Node.NodeID, nil)
-	evaluator := fdm.NewEvaluator()
-	sm := statemachine.NewMachine(nil)
-
-	monitor := heartbeat.NewMemoryMonitor(nil)
-
-	hbConfig := heartbeat.HeartbeatConfig{
-		IntervalMs: 10,
-		TimeoutMs:  50,
-	}
-
-	mockHB := heartbeat.NewHeartbeater(hbConfig, nil)
-	hbService := heartbeat.NewService(hbConfig, mockHB, monitor, elector, evaluator, sm, m, nil)
-
-	store := vcls.NewMemoryStore()
-	vclsService := vcls.NewService(store, cfsClient, vmRepo, witClient, nil, nil, m, nil)
-
-	planner := ha.NewPlanner()
-	executor := ha.NewExecutor(qmClient, nil, nil, taskRepo, m, nil, 0, cfg.HA.FailFast)
-
-	fdmAgent := &mockFDMAgent{level: fdm.DegradationNone}
-
-	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, fdmAgent, nil, nil)
+	// Inject the mock FDM agent into the service created by NewTestService
+	appSvc := app.NewService(cfg, log, metrics.NewNoopMetrics(), testApp.Elector, testApp.HBService, testApp.VCLSService, testApp.Service.Planner(), testApp.Service.Executor(), testApp.SM, testApp.Repo, testApp.PlanRepo, fdmAgent, nil, nil)
 
 	handler := rest.NewHandler(appSvc, log)
-
-	testApp := &helpers.TestApp{
-		Service:   appSvc,
-		CFS:       cfsClient,
-		QM:        qmClient,
-		Witness:   witClient,
-		Repo:      vmRepo,
-		TaskRepo:  taskRepo,
-		PlanRepo:  planRepo,
-		Monitor:   monitor,
-		Elector:   elector,
-		HBService: hbService,
-	}
+	testApp.Service = appSvc
 
 	return appSvc, handler, testApp, fdmAgent
 }

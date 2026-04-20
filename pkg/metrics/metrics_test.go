@@ -17,6 +17,14 @@ func TestNoopMetrics(t *testing.T) {
 	m.IncHATaskTotal("cluster-1", "completed")
 	m.ObserveHAExecutionDuration("cluster-1", 2.5)
 	m.SetProtectedVMCount("cluster-1", 10)
+
+	// Add these explicitly to cover noop methods completely
+	m.IncSweeperReleaseOK()
+	m.IncSweeperReleaseFailed()
+	m.SetSweeperLastRunUnix(float64(1000))
+	m.IncStateMachineTransition("stable", "degraded", "heartbeat_lost")
+	m.SetStateMachineCurrentState("degraded")
+	m.ObserveEvaluationDuration(1.2)
 }
 
 func TestPrometheusMetrics(t *testing.T) {
@@ -33,6 +41,13 @@ func TestPrometheusMetrics(t *testing.T) {
 	m.IncHATaskTotal("cluster-1", "completed")
 	m.ObserveHAExecutionDuration("cluster-1", 2.5)
 	m.SetProtectedVMCount("cluster-1", 10)
+
+	m.IncSweeperReleaseOK()
+	m.IncSweeperReleaseFailed()
+	m.SetSweeperLastRunUnix(float64(1000))
+	m.IncStateMachineTransition("stable", "degraded", "heartbeat_lost")
+	m.SetStateMachineCurrentState("degraded")
+	m.ObserveEvaluationDuration(1.2)
 
 	_, err = reg.Gather()
 	if err != nil {

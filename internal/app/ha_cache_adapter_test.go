@@ -41,8 +41,8 @@ func TestHACacheAdapter_GetComputeMeta(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
-	if res.(*cache.VMComputeMeta).NodeID != "node-1" {
-		t.Errorf("expected node-1, got %v", res.(*cache.VMComputeMeta).NodeID)
+	if res.NodeID != "node-1" {
+		t.Errorf("expected node-1, got %v", res.NodeID)
 	}
 
 	mgrErr := &mockCacheManagerForAdapter{meta: nil, err: errors.New("cache miss")}

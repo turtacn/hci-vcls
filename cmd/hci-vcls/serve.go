@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"os/signal"
 	"syscall"
 	"time"
@@ -59,14 +60,13 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 }
 
-func runServe(cfg *config.Config) error {
+func buildServer(cfg *config.Config) (*app.Service, *rest.Server, *heartbeat.HeartbeatService, error) {
 	var log *zap.Logger
 	if cfg.Log.Level == "debug" {
 		log, _ = zap.NewDevelopment()
 	} else {
 		log, _ = zap.NewProduction()
 	}
-	defer log.Sync()
 
 	m := metrics.NewNoopMetrics()
 
@@ -78,9 +78,14 @@ func runServe(cfg *config.Config) error {
 	taskRepo := mysql.NewMemoryHATaskRepository()
 	planRepo := mysql.NewMemoryPlanRepository()
 
-	termStore, err := election.NewGobTermStore("/var/lib/hci-vcls/election/term.gob")
+	storePath := "/var/lib/hci-vcls/election/term.gob"
+	if cfg.DataDir != "" {
+		storePath = filepath.Join(cfg.DataDir, "election/term.gob")
+	}
+
+	termStore, err := election.NewGobTermStore(storePath)
 	if err != nil {
-		return fmt.Errorf("failed to initialize term store: %v", err)
+		return nil, nil, nil, fmt.Errorf("failed to initialize term store: %v", err)
 	}
 	elector := election.NewMemoryElector(cfg.Node.NodeID, termStore)
 
@@ -96,7 +101,12 @@ func runServe(cfg *config.Config) error {
 
 	appLogger := logger.NewLogger(cfg.Log.Level, cfg.Log.Format)
 
-	storageHb := heartbeat.NewStorageHeartbeater(hbConfig, "/var/lib/hci-vcls/heartbeat", appLogger)
+	hbPath := "/var/lib/hci-vcls/heartbeat"
+	if cfg.DataDir != "" {
+		hbPath = filepath.Join(cfg.DataDir, "heartbeat")
+	}
+
+	storageHb := heartbeat.NewStorageHeartbeater(hbConfig, hbPath, appLogger)
 	_ = storageHb.Start(context.Background()) // start L2 storage heartbeat background workers
 	monitor = heartbeat.NewMemoryMonitor(storageHb)
 	evaluator = fdm.NewEvaluator()
@@ -106,7 +116,7 @@ func runServe(cfg *config.Config) error {
 	hbService := heartbeat.NewService(hbConfig, udpHeartbeater, monitor, elector, evaluator, sm, m, appLogger)
 
 	store := vcls.NewMemoryStore()
-	// NOTE(phase06): wire actual CacheManager instance here when the
+	// NOTE(v1.1): wire actual CacheManager instance here when the
 	// cmd-layer cache bootstrap is refactored. Passing nil preserves
 	// phase04 behavior (no background cache tracking).
 	vclsService := vcls.NewServiceWithCacheManager(store, cfsClient, vmRepo, witClient, nil, nil, nil, m, appLogger)
@@ -129,7 +139,7 @@ func runServe(cfg *config.Config) error {
 
 	// Wire cache fallback path (phase05 T5) — enables minority boot path to
 	// read VM metadata from local snapshot when CFS is read-only.
-	// NOTE(phase06): wire actual CacheManager instance here when the
+	// NOTE(v1.1): wire actual CacheManager instance here when the
 	// cmd-layer cache bootstrap is refactored. Passing nil cacheManager ensures safe placeholder.
 	var cacheManager cache.CacheManager = nil
 	if cacheManager != nil {
@@ -165,9 +175,17 @@ func runServe(cfg *config.Config) error {
 		log.Error("Failed to start sweeper", zap.Error(err))
 	}
 
-	planCache, _ := app.NewFSPlanCache("/var/lib/hci-vcls/plans")
+	planCachePath := "/var/lib/hci-vcls/plans"
+	if cfg.DataDir != "" {
+		planCachePath = filepath.Join(cfg.DataDir, "plans")
+	}
+	planCache, _ := app.NewFSPlanCache(planCachePath)
 
-	auditLogger, err := audit.NewJSONLAuditLogger("/var/lib/hci-vcls/audit")
+	auditPath := "/var/lib/hci-vcls/audit"
+	if cfg.DataDir != "" {
+		auditPath = filepath.Join(cfg.DataDir, "audit")
+	}
+	auditLogger, err := audit.NewJSONLAuditLogger(auditPath)
 	if err == nil {
 		if ea, ok := executor.(interface{ SetAudit(a ha.AuditSink) }); ok {
 			ea.SetAudit(app.NewHAAuditAdapter(auditLogger))
@@ -179,22 +197,33 @@ func runServe(cfg *config.Config) error {
 	handler := rest.NewHandler(appSvc, log)
 	restServer := rest.NewServer(cfg.Server.HTTPAddr, handler)
 
+	return appSvc, restServer, hbService, nil
+}
+
+func runServe(cfg *config.Config) error {
+	appSvc, restServer, hbService, err := buildServer(cfg)
+	if err != nil {
+		return err
+	}
+	// Note: buildServer initiates zap logger properly
+
 	if err := hbService.Start(); err != nil {
 		return fmt.Errorf("failed to start heartbeat service: %v", err)
 	}
 
 	go func() {
 		if err := restServer.Start(); err != nil {
-			log.Error("REST server error", zap.Error(err))
+			fmt.Printf("REST server error: %v\n", err)
 		}
 	}()
-	log.Info("Server started", zap.String("http_addr", cfg.Server.HTTPAddr))
+	fmt.Printf("Server started on %s\n", cfg.Server.HTTPAddr)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	log.Info("Shutting down server...")
+	fmt.Println("Shutting down server...")
 
 	hbService.Stop()
+	_ = appSvc
 	return nil
 }

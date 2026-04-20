@@ -243,6 +243,8 @@ hci-vcls/
 │   ├── cache/             # Local HA metadata snapshot cache
 │   ├── statemachine/      # Cluster degradation state machine
 │   ├── zk/                # ZooKeeper adapter and quorum probe
+│   ├── provider/          # HCI provider abstraction (e.g. Proxmox)
+│   ├── storage/           # ExternalStorage backend abstraction
 │   ├── mysql/             # MySQL adapter and boot-path decoupling
 │   ├── cfs/               # CFS/pmxcfs adapter
 │   ├── qm/                # qm CLI adapter for VM lifecycle

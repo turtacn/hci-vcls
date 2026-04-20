@@ -1,8 +1,10 @@
 package mysql
 
 import (
+	"context"
 	"errors"
 	"testing"
+	"time"
 )
 
 type mockAdapter struct {
@@ -43,6 +45,66 @@ func (m *mockAdapter) UpsertVMState(state HAVMState) error {
 func (m *mockAdapter) Close() error {
 	m.closed = true
 	return m.err
+}
+
+func TestAdapterImpl_FailurePaths(t *testing.T) {
+	// Attempt connecting to invalid DSN to trigger failures natively
+	cfg := MySQLConfig{DSN: "invalid-user:pass@tcp(127.0.0.1:0)/fake"}
+	adapter, err := NewAdapter(cfg, nil)
+	if err != nil {
+		t.Fatalf("expected NewAdapter to return object but err %v", err)
+	}
+
+	h := adapter.Health()
+	if h.State != MySQLStateUnavailable {
+		t.Errorf("Expected unavailable health, got %v", h.State)
+	}
+
+	_, err = adapter.BeginTx()
+	if err == nil {
+		t.Errorf("Expected BeginTx to fail")
+	}
+
+	err = adapter.ClaimBoot(BootClaim{})
+	if err == nil {
+		t.Errorf("Expected ClaimBoot to fail")
+	}
+
+	_ = adapter.ConfirmBoot("100", "token")
+	_ = adapter.ReleaseBoot("100", "token")
+	_, _ = adapter.GetVMState("100")
+	_ = adapter.UpsertVMState(HAVMState{})
+
+	_, err = adapter.ListStaleBootingClaims(context.Background(), time.Now())
+	if err == nil {
+		t.Errorf("Expected ListStaleBootingClaims to fail")
+	}
+
+	err = adapter.ReleaseStaleClaim(context.Background(), "100", "token", "reason")
+	if err == nil {
+		t.Errorf("Expected ReleaseStaleClaim to fail")
+	}
+
+	_ = adapter.Close()
+}
+
+func TestMockAdapter_ClaimBoot(t *testing.T) {
+	mock := &mockAdapter{err: nil}
+
+	err := mock.ClaimBoot(BootClaim{VMID: "100"})
+	if err != nil {
+		t.Errorf("Expected nil error on ClaimBoot, got %v", err)
+	}
+
+	err = mock.ConfirmBoot("100", "t1")
+	if err != nil {
+		t.Errorf("Expected nil error on ConfirmBoot, got %v", err)
+	}
+
+	err = mock.ReleaseBoot("100", "t1")
+	if err != nil {
+		t.Errorf("Expected nil error on ReleaseBoot, got %v", err)
+	}
 }
 
 func TestMySQLAdapterMock(t *testing.T) {

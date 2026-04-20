@@ -49,6 +49,13 @@ func TestMachine(t *testing.T) {
 		EventFailoverTriggered,   // Evaluating -> Failover
 		EventFailoverCompleted,   // Failover -> Recovered
 		EventHeartbeatRestored,   // Recovered -> Stable
+		EventDegradationDetected, // Stable -> Degraded
+		EventHeartbeatRestored,   // Degraded -> Stable
+		EventHeartbeatLost,       // Stable -> Degraded
+		EventEvaluationStarted,
+		EventFailoverTriggered,
+		EventFailoverCompleted,
+		EventHeartbeatRestored,
 	}
 
 	for _, e := range events {
@@ -125,5 +132,60 @@ func TestEvaluate(t *testing.T) {
 				t.Errorf("Evaluate() = %v, expected %v", res, tt.expected)
 			}
 		})
+	}
+}
+
+func TestMapCapabilities(t *testing.T) {
+	if len(MapCapabilities(fdm.DegradationNone)) == 0 {
+		t.Errorf("Expected capabilities for Normal")
+	}
+	if len(MapCapabilities(fdm.DegradationMinor)) == 0 {
+		t.Errorf("Expected capabilities for Minor")
+	}
+	if len(MapCapabilities(fdm.DegradationMajor)) == 0 {
+		t.Errorf("Expected capabilities for Major")
+	}
+	if len(MapCapabilities(fdm.DegradationCritical)) == 0 {
+		t.Errorf("Expected capabilities for Critical")
+	}
+	if len(MapCapabilities(fdm.DegradationLevel("unknown"))) == 0 {
+		t.Errorf("Expected capabilities for Unknown")
+	}
+}
+
+func TestMachine_EvaluateWithInput(t *testing.T) {
+	m := NewMachine(&mockMetrics{})
+
+	// String input (invalid)
+	level, _ := m.EvaluateWithInput("invalid")
+	if level != string(fdm.DegradationCritical) {
+		t.Errorf("expected Critical on invalid input, got %s", level)
+	}
+
+	// EvaluationInput
+	input := EvaluationInput{
+		FDMLevel: fdm.DegradationNone,
+	}
+	level, _ = m.EvaluateWithInput(input)
+	if level != string(fdm.DegradationNone) {
+		t.Errorf("expected None, got %s", level)
+	}
+
+	if m.CurrentLevel() != string(fdm.DegradationNone) {
+		t.Errorf("expected None from CurrentLevel, got %s", m.CurrentLevel())
+	}
+
+	_ = m.TransitionString(string(EventHeartbeatRestored))
+
+	// Map input
+	mapInput := map[string]interface{}{
+		"FDMLevel": fdm.DegradationMinor,
+		"ZKState":  int(zk.ZKStateReadOnly),
+		"CFSState": int(cfs.CFSStateHealthy),
+		"MySQLState": int(mysql.MySQLStateHealthy),
+	}
+	level, _ = m.EvaluateWithInput(mapInput)
+	if level != string(fdm.DegradationMinor) {
+		t.Errorf("expected Minor, got %s", level)
 	}
 }

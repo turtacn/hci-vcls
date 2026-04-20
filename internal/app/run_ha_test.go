@@ -144,7 +144,7 @@ func (m *mockExecutorErr) Execute(ctx context.Context, plan *ha.Plan, opts ha.Ex
 func (m *mockExecutorErr) ExecuteWithCallback(ctx context.Context, plan *ha.Plan, opts ha.ExecuteOpts, onTaskDone func(ha.VMTask)) error {
 	return errors.New("executor error")
 }
-func (m *mockExecutorErr) ExecuteWithPlan(ctx context.Context, planInterface interface{}, opts ha.ExecuteOpts) error {
+func (m *mockExecutorErr) ExecuteWithPlan(ctx context.Context, plan *ha.Plan, opts ha.ExecuteOpts) error {
 	return errors.New("executor error")
 }
 

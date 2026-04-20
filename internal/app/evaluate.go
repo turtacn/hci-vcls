@@ -46,12 +46,27 @@ func buildPlanRequest(clusterID string, state fdm.DegradationLevel, eligibleVMs 
 	return req
 }
 
+func fdmLevelToFloat64(level fdm.DegradationLevel) float64 {
+	switch level {
+	case fdm.DegradationNone:
+		return 0
+	case fdm.DegradationMinor:
+		return 1
+	case fdm.DegradationMajor:
+		return 2
+	case fdm.DegradationCritical:
+		return 3
+	default:
+		return 0
+	}
+}
+
 func toPlanRecord(plan *ha.Plan) *mysql.PlanRecord {
 	return &mysql.PlanRecord{
 		ID:          plan.ID,
 		ClusterID:   plan.ClusterID,
 		Trigger:     plan.Trigger,
-		Degradation: 0, // NOTE(phase06): wire actual DegradationLevel→int mapping
+		Degradation: fdmLevelToFloat64(fdm.DegradationLevel(plan.Degradation)),
 		TaskCount:   len(plan.Tasks),
 		CreatedAt:   plan.CreatedAt,
 	}

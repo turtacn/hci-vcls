@@ -63,3 +63,21 @@ func (s *Server) ListTasks(ctx context.Context, req *proto.ListTasksRequest) (*p
 	}, nil
 }
 
+func (s *Server) GetPlan(ctx context.Context, req *proto.GetPlanRequest) (*proto.GetPlanResponse, error) {
+	return &proto.GetPlanResponse{
+		PlanId: req.PlanId,
+	}, nil
+}
+
+func (s *Server) SweeperStatus(ctx context.Context, req *proto.SweeperStatusRequest) (*proto.SweeperStatusResponse, error) {
+	return &proto.SweeperStatusResponse{
+		LastRunAt: 0,
+		ReleasedCount: 0,
+	}, nil
+}
+
+func (s *Server) QueryAudit(ctx context.Context, req *proto.QueryAuditRequest) (*proto.QueryAuditResponse, error) {
+	return &proto.QueryAuditResponse{
+		Records: make([]*proto.QueryAuditResponse_AuditRecord, 0),
+	}, nil
+}

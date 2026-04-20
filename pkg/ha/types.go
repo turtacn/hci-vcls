@@ -69,6 +69,7 @@ type PlanRequest struct {
 	PreferWitness    bool
 	BatchSize        int
 	DegradationLevel string
+	StorageRegistry  interface{} // Optionally pass storage.Registry for storage accessibility checks
 }
 
 // Old types to keep tests compiling temporarily
@@ -127,6 +128,7 @@ const (
 	BootPathLegacy BootPath = "Legacy"
 )
 
+// Deprecated: v1.1
 type HAEngine interface {
 	Start(ctx context.Context) error
 	Stop() error

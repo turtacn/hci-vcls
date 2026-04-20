@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/turtacn/hci-vcls/internal/logger"
+	"github.com/turtacn/hci-vcls/pkg/cache"
 	"github.com/turtacn/hci-vcls/pkg/metrics"
 	"github.com/turtacn/hci-vcls/pkg/mysql"
 	"github.com/turtacn/hci-vcls/pkg/qm"
@@ -52,11 +53,7 @@ func (e *executorImpl) SetAudit(a AuditSink) {
 }
 
 // ExecuteWithPlan handles untyped plan interface to avoid dependency loops from fdm agent mock calls
-func (e *executorImpl) ExecuteWithPlan(ctx context.Context, planInterface interface{}, opts ExecuteOpts) error {
-	plan, ok := planInterface.(*Plan)
-	if !ok {
-		return ErrInvalidPlan
-	}
+func (e *executorImpl) ExecuteWithPlan(ctx context.Context, plan *Plan, opts ExecuteOpts) error {
 	return e.ExecuteWithCallback(ctx, plan, opts, nil)
 }
 
@@ -284,7 +281,7 @@ func (e *executorImpl) claimBoot(ctx context.Context, task *VMTask, plan *Plan, 
 	return tx, nil
 }
 
-func (e *executorImpl) loadCachedMeta(ctx context.Context, task *VMTask) (interface{}, error) {
+func (e *executorImpl) loadCachedMeta(ctx context.Context, task *VMTask) (*cache.VMComputeMeta, error) {
 	if task.BootPath == BootPathMinority && e.cache != nil {
 		meta, err := e.cache.GetComputeMeta(ctx, task.VMID)
 		return meta, err
@@ -292,7 +289,7 @@ func (e *executorImpl) loadCachedMeta(ctx context.Context, task *VMTask) (interf
 	return nil, nil
 }
 
-func (e *executorImpl) startVM(ctx context.Context, task *VMTask, meta interface{}) error {
+func (e *executorImpl) startVM(ctx context.Context, task *VMTask, meta *cache.VMComputeMeta) error {
 	_, err := e.qmClient.StartVM(ctx, task.VMID, task.ClusterID, task.TargetHost, string(task.BootPath))
 	return err
 }

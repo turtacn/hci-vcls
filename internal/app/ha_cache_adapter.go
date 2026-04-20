@@ -16,6 +16,6 @@ func NewHACacheAdapter(mgr cache.CacheManager) ha.CacheProvider {
 	return &haCacheAdapter{mgr: mgr}
 }
 
-func (a *haCacheAdapter) GetComputeMeta(ctx context.Context, vmid string) (interface{}, error) {
+func (a *haCacheAdapter) GetComputeMeta(ctx context.Context, vmid string) (*cache.VMComputeMeta, error) {
 	return a.mgr.GetComputeMeta(ctx, vmid)
 }

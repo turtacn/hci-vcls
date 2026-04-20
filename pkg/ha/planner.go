@@ -65,12 +65,36 @@ func (p *plannerImpl) BuildPlan(ctx context.Context, req PlanRequest) (*Plan, er
 		var bestScore float64 = -1
 		var bestReason string
 
+		var checker StorageReachabilityProbe
+		if req.StorageRegistry != nil {
+			if c, ok := req.StorageRegistry.(StorageReachabilityProbe); ok {
+				checker = c
+			}
+		}
+
 		for i, host := range candidates {
 			if !host.Healthy {
 				continue
 			}
 			if host.HostID == vm.CurrentHost {
 				continue
+			}
+
+			if checker != nil {
+				// We don't have a storageID natively in vm here without vcls update, assuming 'local'
+				statuses, err := checker.ProbeAll(ctx, "local")
+				if err == nil {
+					reachable := false
+					for _, s := range statuses {
+						if s.Available {
+							reachable = true
+							break
+						}
+					}
+					if !reachable {
+						continue
+					}
+				}
 			}
 
 			score, reason := ScoreHost(host, sourceDomain, req.PreferWitness)

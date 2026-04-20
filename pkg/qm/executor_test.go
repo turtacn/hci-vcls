@@ -97,6 +97,22 @@ func TestMockExecutor_CustomBehavior(t *testing.T) {
 	}
 }
 
+func TestMockExecutor_Timeout(t *testing.T) {
+	mock := &MockExecutor{
+		StatusFunc: func(ctx context.Context, vmid string) (VMStatus, error) {
+			return VMStatusUnknown, nil
+		},
+	}
+	ctx := context.Background()
+	status, err := mock.Status(ctx, "100")
+	if err != nil {
+		t.Errorf("Expected no error")
+	}
+	if status != VMStatusUnknown {
+		t.Errorf("Expected unknown")
+	}
+}
+
 func TestQMError(t *testing.T) {
 	err := ErrVMNotFound
 	if err.Error() == "" {

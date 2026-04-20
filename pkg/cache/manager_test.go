@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/turtacn/hci-vcls/internal/logger"
 	"github.com/turtacn/hci-vcls/pkg/metrics"
@@ -101,6 +102,72 @@ func TestCacheManager_GetComputeMeta(t *testing.T) {
 	stats = mgr.Stats()
 	if stats.Hits != 1 || stats.TotalEntries != 1 {
 		t.Errorf("Expected 1 hit, 1 entry, got %+v", stats)
+	}
+}
+
+type mockNetworkStore struct{
+	metas map[string]VMNetworkMeta
+}
+func (m *mockNetworkStore) Get(vmid string) (*VMNetworkMeta, error) { return nil, ErrCacheMiss }
+func (m *mockNetworkStore) Put(vmid string, meta VMNetworkMeta) error { return nil }
+func (m *mockNetworkStore) Delete(vmid string) error { return nil }
+func (m *mockNetworkStore) List() ([]VMNetworkMeta, error) { return nil, nil }
+
+type mockStorageStore struct{
+	metas map[string]VMStorageMeta
+}
+func (m *mockStorageStore) Get(vmid string) (*VMStorageMeta, error) { return nil, ErrCacheMiss }
+func (m *mockStorageStore) Put(vmid string, meta VMStorageMeta) error { return nil }
+func (m *mockStorageStore) Delete(vmid string) error { return nil }
+func (m *mockStorageStore) List() ([]VMStorageMeta, error) { return nil, nil }
+
+func TestCacheManager_GetOtherMetas(t *testing.T) {
+	config := CacheManagerConfig{SyncIntervalMs: 60000}
+	source := &mockMetaSource{}
+	store := &mockStore{metas: make(map[string]VMComputeMeta)}
+	nstore := &mockNetworkStore{metas: make(map[string]VMNetworkMeta)}
+	sstore := &mockStorageStore{metas: make(map[string]VMStorageMeta)}
+
+	mgr := NewCacheManager(config, store, nstore, sstore, source, logger.Default(), metrics.NewNoopMetrics())
+
+	ctx := context.Background()
+	_, _ = mgr.GetNetworkMeta(ctx, "100")
+	_, _ = mgr.GetStorageMeta(ctx, "100")
+	_, _ = mgr.GetHAMeta(ctx, "100")
+
+	// Test error cases
+	_, _ = mgr.GetNetworkMeta(ctx, "200")
+	_, _ = mgr.GetStorageMeta(ctx, "200")
+	_, _ = mgr.GetHAMeta(ctx, "200")
+}
+
+func TestMockSourceCoverage(t *testing.T) {
+	source := &MultiSource{Primary: &mockMetaSource{}, Backup: &mockMetaSource{}}
+	ctx := context.Background()
+	_, _ = source.FetchVMComputeMeta(ctx, "100")
+	_, _ = source.FetchVMNetworkMeta(ctx, "100")
+	_, _ = source.FetchVMStorageMeta(ctx, "100")
+	_, _ = source.FetchVMHAMeta(ctx, "100")
+
+	// mock parsing
+	cfgBytes := []byte("name: test\ncores: 4\n")
+	_, _ = ParsePVEConfig(cfgBytes)
+}
+
+func TestCache_IsExpired(t *testing.T) {
+	entry := CachedEntry{
+		Timestamp: time.Now().Add(-10 * time.Second),
+		TTL:       5 * time.Second,
+	}
+	if !entry.IsExpired() {
+		t.Errorf("expected true")
+	}
+	entry2 := CachedEntry{
+		Timestamp: time.Now(),
+		TTL:       0,
+	}
+	if entry2.IsExpired() {
+		t.Errorf("expected false")
 	}
 }
 

@@ -54,6 +54,11 @@ func TestZKAdapter(t *testing.T) {
 		t.Errorf("Expected healthy, got %v", status.State)
 	}
 
+	status = mock.IsReadOnly()
+	if status.State != ZKStateHealthy {
+		t.Errorf("Expected healthy for read only, got %v", status.State)
+	}
+
 	err := mock.Close()
 	if err != nil {
 		t.Errorf("Expected no error on close, got %v", err)

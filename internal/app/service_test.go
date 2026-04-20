@@ -67,7 +67,7 @@ func (m *mockExecutor) ExecuteWithCallback(ctx context.Context, plan *ha.Plan, o
 	return nil
 }
 
-func (m *mockExecutor) ExecuteWithPlan(ctx context.Context, planInterface interface{}, opts ha.ExecuteOpts) error {
+func (m *mockExecutor) ExecuteWithPlan(ctx context.Context, plan *ha.Plan, opts ha.ExecuteOpts) error {
 	m.executed.Store(true)
 	return nil
 }

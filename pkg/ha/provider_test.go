@@ -11,7 +11,7 @@ import (
 // we use a thin adapter in internal/app to bridge it, so we mock the adapter structurally here.
 type dummyAdapter struct{ mgr cache.CacheManager }
 
-func (a *dummyAdapter) GetComputeMeta(ctx context.Context, vmid string) (interface{}, error) {
+func (a *dummyAdapter) GetComputeMeta(ctx context.Context, vmid string) (*cache.VMComputeMeta, error) {
 	return a.mgr.GetComputeMeta(ctx, vmid)
 }
 

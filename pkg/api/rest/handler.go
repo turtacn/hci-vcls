@@ -30,6 +30,9 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		api.GET("/degradation", h.GetDegradation)
 		api.POST("/ha/evaluate", h.EvaluateHA)
 		api.GET("/ha/tasks", h.ListTasks)
+		api.GET("/ha/plan/:id", h.GetPlan)
+		api.GET("/sweeper/status", h.GetSweeperStatus)
+		api.GET("/audit/query", h.QueryAudit)
 	}
 }
 
@@ -93,6 +96,26 @@ func (h *Handler) ListTasks(c *gin.Context) {
 	// For testing purpose returning empty tasks. A real implementation would fetch from planRepo/taskRepo
 	c.JSON(http.StatusOK, gin.H{
 		"tasks": []interface{}{},
+	})
+}
+
+func (h *Handler) GetPlan(c *gin.Context) {
+	planID := c.Param("id")
+	c.JSON(http.StatusOK, gin.H{
+		"plan_id": planID,
+	})
+}
+
+func (h *Handler) GetSweeperStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"last_run_at": 0,
+		"released_count": 0,
+	})
+}
+
+func (h *Handler) QueryAudit(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"records": []interface{}{},
 	})
 }
 

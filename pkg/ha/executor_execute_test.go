@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/turtacn/hci-vcls/internal/logger"
+	"github.com/turtacn/hci-vcls/pkg/cache"
 	"github.com/turtacn/hci-vcls/pkg/mysql"
 	"github.com/turtacn/hci-vcls/pkg/qm"
 )
@@ -81,11 +82,11 @@ func (m *mockMySQLAdapter) RunQuery(ctx context.Context, query string, args ...i
 }
 
 type mockCacheProvider struct {
-	meta interface{}
+	meta *cache.VMComputeMeta
 	err  error
 }
 
-func (m *mockCacheProvider) GetComputeMeta(ctx context.Context, vmid string) (interface{}, error) {
+func (m *mockCacheProvider) GetComputeMeta(ctx context.Context, vmid string) (*cache.VMComputeMeta, error) {
 	return m.meta, m.err
 }
 

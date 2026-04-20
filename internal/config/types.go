@@ -79,5 +79,6 @@ type Config struct {
 	Cache     CacheConfig     `mapstructure:"cache"`
 	Metrics   MetricsConfig   `mapstructure:"metrics"`
 	GRPC      GRPCConfig      `mapstructure:"grpc"`
+	DataDir   string          `mapstructure:"data_dir"`
 }
 

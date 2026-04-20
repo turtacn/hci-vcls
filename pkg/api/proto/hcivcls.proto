@@ -10,6 +10,9 @@ service HCIVclsService {
     rpc GetDegradation(DegradationRequest) returns (DegradationResponse);
     rpc EvaluateHA(EvaluateHARequest) returns (EvaluateHAResponse);
     rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+    rpc GetPlan(GetPlanRequest) returns (GetPlanResponse);
+    rpc SweeperStatus(SweeperStatusRequest) returns (SweeperStatusResponse);
+    rpc QueryAudit(QueryAuditRequest) returns (QueryAuditResponse);
 }
 
 message VersionRequest {}
@@ -37,6 +40,7 @@ message DegradationResponse {
 
 message EvaluateHARequest {
     string cluster_id = 1;
+    bool dry_run = 2;
 }
 
 message EvaluateHAResponse {
@@ -56,3 +60,35 @@ message ListTasksResponse {
     repeated TaskInfo tasks = 1;
 }
 
+message GetPlanRequest {
+    string plan_id = 1;
+}
+
+message GetPlanResponse {
+    string plan_id = 1;
+    string trigger = 2;
+    int32 tasks_count = 3;
+}
+
+message SweeperStatusRequest {}
+
+message SweeperStatusResponse {
+    int64 last_run_at = 1;
+    int32 released_count = 2;
+}
+
+message QueryAuditRequest {
+    string cluster_id = 1;
+    string vmid = 2;
+    int64 start_time = 3;
+    int64 end_time = 4;
+}
+
+message QueryAuditResponse {
+    message AuditRecord {
+        string cluster_id = 1;
+        string vmid = 2;
+        string outcome = 3;
+    }
+    repeated AuditRecord records = 1;
+}

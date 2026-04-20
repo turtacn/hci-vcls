@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -64,17 +65,31 @@ func DefaultTestConfig() *config.Config {
 	return cfg
 }
 
+type TrackingQMClient struct {
+	qm.Client
+	Starts []string
+}
+
+func (t *TrackingQMClient) StartVM(ctx context.Context, vmID, clusterID, targetHost, bootPath string) (*qm.Task, error) {
+	t.Starts = append(t.Starts, vmID)
+	return t.Client.StartVM(ctx, vmID, clusterID, targetHost, bootPath)
+}
+
 type TestApp struct {
-	Service   *app.Service
-	CFS       *cfs.MemoryClient
-	QM        *qm.MemoryClient
-	Witness   *witness.MemoryClient
-	Repo      *mysql.MemoryVMRepository
-	TaskRepo  *mysql.MemoryHATaskRepository
-	PlanRepo  *mysql.MemoryPlanRepository
-	Monitor   heartbeat.Monitor
-	Elector   election.Elector
-	HBService *heartbeat.HeartbeatService
+	Service     *app.Service
+	CFS         *cfs.MemoryClient
+	QM          *TrackingQMClient
+	Witness     *witness.MemoryClient
+	Repo        *mysql.MemoryVMRepository
+	TaskRepo    *mysql.MemoryHATaskRepository
+	PlanRepo    *mysql.MemoryPlanRepository
+	Monitor     heartbeat.Monitor
+	Elector     election.Elector
+	HBService   *heartbeat.HeartbeatService
+	VCLSService vcls.Service
+	SM          statemachine.Machine
+	Planner     ha.Planner
+	Executor    ha.Executor
 }
 
 func NewTestService(cfg *config.Config) *TestApp {
@@ -83,6 +98,7 @@ func NewTestService(cfg *config.Config) *TestApp {
 
 	cfsClient := cfs.NewMemoryClient()
 	qmClient := qm.NewMemoryClient(0.0, 1*time.Millisecond)
+	trackingQM := &TrackingQMClient{Client: qmClient}
 	witClient := witness.NewMemoryClient()
 
 	vmRepo := mysql.NewMemoryVMRepository()
@@ -108,20 +124,24 @@ func NewTestService(cfg *config.Config) *TestApp {
 	vclsService := vcls.NewService(store, cfsClient, vmRepo, witClient, nil, nil, m, nil)
 
 	planner := ha.NewPlanner()
-	executor := ha.NewExecutor(qmClient, nil, nil, taskRepo, m, nil, 0, cfg.HA.FailFast)
+	executor := ha.NewExecutor(trackingQM, nil, nil, taskRepo, m, nil, 0, cfg.HA.FailFast)
 
 	appSvc := app.NewService(cfg, log, m, elector, hbService, vclsService, planner, executor, sm, vmRepo, planRepo, nil, nil, nil)
 
 	return &TestApp{
-		Service:   appSvc,
-		CFS:       cfsClient,
-		QM:        qmClient,
-		Witness:   witClient,
-		Repo:      vmRepo,
-		TaskRepo:  taskRepo,
-		PlanRepo:  planRepo,
-		Monitor:   monitor,
-		Elector:   elector,
-		HBService: hbService,
+		Service:     appSvc,
+		CFS:         cfsClient,
+		QM:          trackingQM,
+		Witness:     witClient,
+		Repo:        vmRepo,
+		TaskRepo:    taskRepo,
+		PlanRepo:    planRepo,
+		Monitor:     monitor,
+		Elector:     elector,
+		HBService:   hbService,
+		VCLSService: vclsService,
+		SM:          sm,
+		Planner:     planner,
+		Executor:    executor,
 	}
 }

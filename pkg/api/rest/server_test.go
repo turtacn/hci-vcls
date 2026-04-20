@@ -147,6 +147,56 @@ func TestEvaluateHA_MissingCluster(t *testing.T) {
 	}
 }
 
+func TestNewEndpoints(t *testing.T) {
+	svc := &app.Service{}
+	handler := NewHandler(svc, zap.NewNop())
+
+	router := gin.Default()
+	handler.RegisterRoutes(router)
+
+	req, _ := http.NewRequest("GET", "/api/v1/ha/plan/123", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status code 200, got %v", w.Code)
+	}
+
+	req2, _ := http.NewRequest("GET", "/api/v1/sweeper/status", nil)
+	w2 := httptest.NewRecorder()
+	router.ServeHTTP(w2, req2)
+
+	if w2.Code != http.StatusOK {
+		t.Errorf("Expected status code 200, got %v", w2.Code)
+	}
+
+	req3, _ := http.NewRequest("GET", "/api/v1/audit/query", nil)
+	w3 := httptest.NewRecorder()
+	router.ServeHTTP(w3, req3)
+
+	if w3.Code != http.StatusOK {
+		t.Errorf("Expected status code 200, got %v", w3.Code)
+	}
+}
+
+func TestHandleError(t *testing.T) {
+	handler := NewHandler(nil, zap.NewNop())
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	handler.handleError(c, app.ErrNotLeader)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("Expected 403, got %d", w.Code)
+	}
+
+	w2 := httptest.NewRecorder()
+	c2, _ := gin.CreateTestContext(w2)
+	handler.handleError(c2, app.ErrBelowThreshold)
+	if w2.Code != http.StatusOK {
+		t.Errorf("Expected 200, got %d", w2.Code)
+	}
+}
+
 func TestListTasks(t *testing.T) {
 	router, _ := setupTestRouter()
 
