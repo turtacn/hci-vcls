@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -194,6 +195,21 @@ func TestHandleError(t *testing.T) {
 	handler.handleError(c2, app.ErrBelowThreshold)
 	if w2.Code != http.StatusOK {
 		t.Errorf("Expected 200, got %d", w2.Code)
+	}
+
+	w3 := httptest.NewRecorder()
+	c3, _ := gin.CreateTestContext(w3)
+	importErrors := errors.New("no healthy candidate host available")
+	handler.handleError(c3, importErrors)
+	if w3.Code != http.StatusConflict {
+		t.Errorf("Expected 409, got %d", w3.Code)
+	}
+
+	w4 := httptest.NewRecorder()
+	c4, _ := gin.CreateTestContext(w4)
+	handler.handleError(c4, errors.New("other"))
+	if w4.Code != http.StatusInternalServerError {
+		t.Errorf("Expected 500, got %d", w4.Code)
 	}
 }
 

@@ -89,3 +89,30 @@ func TestMemoryClient_CreateExists(t *testing.T) {
 	}
 }
 
+func TestMemoryClient_CloseAndSession(t *testing.T) {
+	client := NewMemoryClient()
+	state := client.SessionState()
+	if state != Disconnected {
+		t.Errorf("Expected Disconnected, got %v", state)
+	}
+
+	err := client.Connect(context.Background())
+	if err != nil {
+		t.Fatalf("expected connect to succeed")
+	}
+
+	state = client.SessionState()
+	if state != Connected {
+		t.Errorf("Expected Connected, got %v", state)
+	}
+
+	err = client.Close()
+	if err != nil {
+		t.Fatalf("expected close to succeed")
+	}
+
+	state = client.SessionState()
+	if state != Disconnected {
+		t.Errorf("Expected Disconnected after close")
+	}
+}

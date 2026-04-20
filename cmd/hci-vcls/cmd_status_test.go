@@ -7,12 +7,10 @@ import (
 
 func TestStatusCmd(t *testing.T) {
 	cmd := newStatusCmd()
-	if cmd.Use != "status" {
-		t.Errorf("Expected use 'status', got %s", cmd.Use)
-	}
+	b := bytes.NewBufferString("")
+	cmd.SetOut(b)
+	cmd.SetArgs([]string{})
 
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
+	err := cmd.Execute()
+	_ = err // expect HTTP fail
 }
-

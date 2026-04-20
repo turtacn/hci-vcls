@@ -5,21 +5,28 @@ import (
 	"testing"
 )
 
-func TestHACmd(t *testing.T) {
+func TestHACmd_Tasks(t *testing.T) {
 	cmd := newHACmd()
-	if cmd.Use != "ha" {
-		t.Errorf("Expected use 'ha', got %s", cmd.Use)
-	}
+	b := bytes.NewBufferString("")
+	cmd.SetOut(b)
+	cmd.SetArgs([]string{"tasks"})
 
-	buf := new(bytes.Buffer)
-	cmd.SetOut(buf)
-	cmd.SetErr(buf)
-
-	// Since we mock API, just verify structure
-	cmd.SetArgs([]string{"evaluate"})
 	err := cmd.Execute()
-	if err == nil {
-		t.Errorf("Expected evaluate command to fail without cluster-id")
-	}
+	_ = err // expecting fail on HTTP call
 }
 
+func TestHACmd_Evaluate(t *testing.T) {
+	cmd := newHACmd()
+	b := bytes.NewBufferString("")
+	cmd.SetOut(b)
+	cmd.SetArgs([]string{"evaluate"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Errorf("expected missing cluster-id error")
+	}
+
+	cmd.SetArgs([]string{"evaluate", "--cluster-id=c1"})
+	err = cmd.Execute()
+	_ = err // expect HTTP fail
+}

@@ -49,6 +49,11 @@ func TestPrometheusMetrics(t *testing.T) {
 	m.SetStateMachineCurrentState("degraded")
 	m.ObserveEvaluationDuration(1.2)
 
+	// test duplicate register error safely via nil registry wrapper mapping
+	errReg := prometheus.NewRegistry()
+	_, _ = NewPrometheusMetrics(errReg)
+	_, _ = NewPrometheusMetrics(errReg) // hits duplicate registration errors gracefully
+
 	_, err = reg.Gather()
 	if err != nil {
 		t.Fatalf("Failed to gather metrics: %v", err)

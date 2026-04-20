@@ -3,6 +3,8 @@ package zk
 import (
 	"errors"
 	"testing"
+
+	"github.com/turtacn/hci-vcls/internal/logger"
 )
 
 type mockAdapter struct {
@@ -66,6 +68,34 @@ func TestZKAdapter(t *testing.T) {
 	if !mock.closed {
 		t.Errorf("Expected closed flag to be set")
 	}
+}
+
+func TestAdapterImpl_FailurePaths(t *testing.T) {
+	// Use 127.0.0.1 with dummy port to avoid dns lookup failure, trigger timeout
+	cfg := ZKConfig{Endpoints: []string{"127.0.0.1:12345"}, SessionTimeoutMs: 10}
+
+	// Since go-zookeeper connects async, it should return an adapter structure
+	adapter, err := NewAdapter(cfg, logger.Default())
+	if err != nil {
+		t.Fatalf("expected NewAdapter to return object but err %v", err)
+	}
+
+	h := adapter.Health()
+	if h.State != ZKStateUnavailable {
+		t.Errorf("Expected unavailable health, got %v", h.State)
+	}
+
+	h = adapter.IsReadOnly()
+	if h.State != ZKStateHealthy {
+		t.Errorf("Expected healthy for read only stub, got %v", h.State)
+	}
+
+	h = adapter.Ping()
+	if h.State != ZKStateUnavailable {
+		t.Errorf("Expected unavailable for ping, got %v", h.State)
+	}
+
+	_ = adapter.Close()
 }
 
 func TestHealthStateString(t *testing.T) {

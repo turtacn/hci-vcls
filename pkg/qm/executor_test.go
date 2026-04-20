@@ -125,3 +125,21 @@ func TestQMError(t *testing.T) {
 	}
 }
 
+func TestExecutorImpl_Basic(t *testing.T) {
+	e := NewExecutor(QMConfig{})
+	ctx := context.Background()
+
+	res := e.Start(ctx, "100", BootOptions{TimeoutMs: 100})
+	if !res.Success {
+		t.Errorf("expected success")
+	}
+
+	status, _ := e.Status(ctx, "100")
+	if status != VMStatusRunning {
+		t.Errorf("expected running")
+	}
+
+	_ = e.Stop(ctx, "100", BootOptions{})
+	_ = e.Lock(ctx, "100")
+	_ = e.Unlock(ctx, "100")
+}
